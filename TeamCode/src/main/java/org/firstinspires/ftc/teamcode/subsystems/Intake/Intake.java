@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems.Intake;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -15,6 +16,7 @@ public class Intake {
     public enum TiltPos {
         UP,
         DOWN,
+        MANUAL,
         MIDDLE
     }
 
@@ -73,8 +75,10 @@ public class Intake {
                 "intakeMotor",
                 4
         );
-        intakeMotor.setTargetPower(0);
+        intakeMotor.setPowerForced( 0);
 
+        intakeMotor.motor[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intakeMotor.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         capacPos = CapacPos.UP;
         tiltPos = TiltPos.UP;
         intakeState = IntakeState.IDLE;

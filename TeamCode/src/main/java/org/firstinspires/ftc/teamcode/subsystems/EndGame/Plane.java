@@ -25,9 +25,6 @@ public class Plane {
         this.Status = status.IN;
     }
 
-    public void initiliaze() {
-        this.plane.setPosition(close);
-    }
 
     public void setOut() {
         this.Status = status.OUT;

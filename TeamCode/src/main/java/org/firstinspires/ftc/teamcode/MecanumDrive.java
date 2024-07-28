@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode;
-
 import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.*;
 import com.acmerobotics.roadrunner.AngularVelConstraint;
@@ -30,6 +30,7 @@ import com.acmerobotics.roadrunner.ftc.LynxFirmware;
 import com.acmerobotics.roadrunner.ftc.OverflowEncoder;
 import com.acmerobotics.roadrunner.ftc.PositionVelocityPair;
 import com.acmerobotics.roadrunner.ftc.RawEncoder;
+import com.arcrobotics.ftclib.controller.PIDFController;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -38,41 +39,55 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.teamcode.TwoDeadWheelLocalizer;
+import org.firstinspires.ftc.teamcode.Drawing;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.messages.DriveCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.messages.MecanumLocalizerInputsMessage;
 import org.firstinspires.ftc.teamcode.messages.PoseMessage;
+import org.firstinspires.ftc.teamcode.Localizer;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
+import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
+import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
+
 
 import java.lang.Math;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 @Config
 public final class MecanumDrive {
+
+
+
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
         //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
         public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.UP;
+                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+                RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         // drive model parameters
-        public double inPerTick = 1;
-        public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 0;
+        public double inPerTick = 0.000536125750006; //0.0005361
+        public double lateralInPerTick = 0.00040514361129224307;
+        public double trackWidthTicks = 22761.026222853972;
 
         // feedforward parameters (in tick units)
-        public double kS = 0;
-        public double kV = 0;
+        public double kS = 0.8253426272741731;
+        public double kV = 0.00007395369196729157;
         public double kA = 0;
 
-        // path profile parameters (in inches)
+        // path profi
+        // le parameters (in inches)
         public double maxWheelVel = 50;
         public double minProfileAccel = -30;
         public double maxProfileAccel = 50;
@@ -93,8 +108,12 @@ public final class MecanumDrive {
 
     public static Params PARAMS = new Params();
 
+    public final HardwareQueue hardwareQueue;
     public final MecanumKinematics kinematics = new MecanumKinematics(
             PARAMS.inPerTick * PARAMS.trackWidthTicks, PARAMS.inPerTick / PARAMS.lateralInPerTick);
+
+    Pose2d poseWithoutBacktracking = new Pose2d(0.0,0.0,0.0);
+    public static double [] OverallError = new double[3];
 
     public final TurnConstraints defaultTurnConstraints = new TurnConstraints(
             PARAMS.maxAngVel, -PARAMS.maxAngAccel, PARAMS.maxAngAccel);
@@ -106,10 +125,27 @@ public final class MecanumDrive {
     public final AccelConstraint defaultAccelConstraint =
             new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
 
-    public final DcMotorEx leftFront, leftBack, rightBack, rightFront;
+    public final PriorityMotor leftFront, leftBack, rightBack, rightFront;
+    public final CachingDcMotorEx CleftFront, CleftBack, CrightBack, CrightFront;
+    public final double MAX_TRANSLATIONAL_SPEED = 1;
+    MultipleTelemetry telemetry;
+    public static double xP = 0.024, xD = 0.028;
+    public static double yP = 0.048, yD = 0.03;
+    public static double hP = 0.4, hD = 0.05;
 
+    public static double ALLOWED_TRANSLATIONAL_ERROR = 1;
+    public static double ALLOWED_HEADING_ERROR = 0.02;
+    private ElapsedTime stable;
+    private ElapsedTime timer;
+    public final double MAX_ROTATIONAL_SPEED = 0.9;
     public final VoltageSensor voltageSensor;
-
+    public static PIDFController xController = new PIDFController(xP, 0, xD, 0);
+    public static PIDFController yController = new PIDFController(yP, 0, yD, 0);
+    public static PIDFController hController = new PIDFController(hP, 0, hD, 0);
+    public final double X_GAIN = 2.00;
+    public static double STABLE_MS = 50;
+    public static double DEAD_MS = 2500;
+    public static double END_GAIN = 3;
     public final LazyImu lazyImu;
 
     public final Localizer localizer;
@@ -131,10 +167,10 @@ public final class MecanumDrive {
         private boolean initialized;
 
         public DriveLocalizer() {
-            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront));
-            leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack));
-            rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack));
-            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront));
+            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront.motor[0]));
+            leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack.motor[0]));
+            rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack.motor[0]));
+            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront.motor[0]));
 
             imu = lazyImu.get();
 
@@ -206,27 +242,37 @@ public final class MecanumDrive {
         }
     }
 
-    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
+    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose,HardwareQueue hardwareQueue) {
         this.pose = pose;
-
+        this.hardwareQueue = hardwareQueue;
         LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
-
+        CrightFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightFront"));
+        CrightBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightRear"));
+        CleftBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftRear"));
+        CleftFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftFront"));
         // TODO: make sure your config has motors with these names (or change them)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
-        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
+        leftFront = new PriorityMotor(CleftFront, "leftFront", 5);
+        leftBack = new PriorityMotor(CleftBack, "leftBack", 5);
+        rightBack = new PriorityMotor(CrightBack, "rightBack", 5);
+        rightFront = new PriorityMotor(CrightFront, "rightFront", 5);
 
+        leftBack.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+
+        hardwareQueue.addDevice(leftFront);
+        hardwareQueue.addDevice(leftBack);
+        hardwareQueue.addDevice(rightBack);
+        hardwareQueue.addDevice(rightFront);
         // TODO: reverse motor directions if needed
         //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -236,8 +282,9 @@ public final class MecanumDrive {
                 PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
-
-        localizer = new DriveLocalizer();
+        stable = null;
+        timer = null;
+        localizer = new TwoDeadWheelLocalizer(hardwareMap, this.lazyImu.get(), PARAMS.inPerTick);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
@@ -251,10 +298,10 @@ public final class MecanumDrive {
             maxPowerMag = Math.max(maxPowerMag, power.value());
         }
 
-        leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);
-        leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
-        rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
-        rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
+        leftFront.setTargetPower(wheelVels.leftFront.get(0) / maxPowerMag);
+        leftBack.setTargetPower(wheelVels.leftBack.get(0) / maxPowerMag);
+        rightBack.setTargetPower(wheelVels.rightBack.get(0) / maxPowerMag);
+        rightFront.setTargetPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
     public final class FollowTrajectoryAction implements Action {
@@ -289,10 +336,10 @@ public final class MecanumDrive {
             }
 
             if (t >= timeTrajectory.duration) {
-                leftFront.setPower(0);
-                leftBack.setPower(0);
-                rightBack.setPower(0);
-                rightFront.setPower(0);
+                leftFront.setPowerForced(0);
+                leftBack.setPowerForced(0);
+                rightBack.setPowerForced(0);
+                rightFront.setPowerForced(0);
 
                 return false;
             }
@@ -322,10 +369,10 @@ public final class MecanumDrive {
                     voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
             ));
 
-            leftFront.setPower(leftFrontPower);
-            leftBack.setPower(leftBackPower);
-            rightBack.setPower(rightBackPower);
-            rightFront.setPower(rightFrontPower);
+            leftFront.setTargetPower(leftFrontPower);
+            leftBack.setTargetPower(leftBackPower);
+            rightBack.setTargetPower(rightBackPower);
+            rightFront.setTargetPower(rightFrontPower);
 
             p.put("x", pose.position.x);
             p.put("y", pose.position.y);
@@ -381,10 +428,10 @@ public final class MecanumDrive {
             }
 
             if (t >= turn.duration) {
-                leftFront.setPower(0);
-                leftBack.setPower(0);
-                rightBack.setPower(0);
-                rightFront.setPower(0);
+                leftFront.setPowerForced(0);
+                leftBack.setPowerForced(0);
+                rightBack.setPowerForced(0);
+                rightFront.setPowerForced(0);
 
                 return false;
             }
@@ -413,10 +460,10 @@ public final class MecanumDrive {
                     voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
             ));
 
-            leftFront.setPower(feedforward.compute(wheelVels.leftFront) / voltage);
-            leftBack.setPower(feedforward.compute(wheelVels.leftBack) / voltage);
-            rightBack.setPower(feedforward.compute(wheelVels.rightBack) / voltage);
-            rightFront.setPower(feedforward.compute(wheelVels.rightFront) / voltage);
+            leftFront.setTargetPower(feedforward.compute(wheelVels.leftFront) / voltage);
+            leftBack.setTargetPower(feedforward.compute(wheelVels.leftBack) / voltage);
+            rightBack.setTargetPower(feedforward.compute(wheelVels.rightBack) / voltage);
+            rightFront.setTargetPower(feedforward.compute(wheelVels.rightFront) / voltage);
 
             Canvas c = p.fieldOverlay();
             drawPoseHistory(c);
@@ -440,10 +487,79 @@ public final class MecanumDrive {
         }
     }
 
+    /*
+    public boolean isFinished(Pose targetPose) {
+        PoseVelocity2d rel = updatePoseEstimate();
+
+        Pose partial = new Pose(pose);
+        Pose error = targetPose.subtract(partial);
+
+
+        if (error.toVec2D().magnitude() > ALLOWED_TRANSLATIONAL_ERROR
+                || Math.abs(error.heading) > ALLOWED_HEADING_ERROR) {
+            stable.reset();
+        }
+
+        return timer.milliseconds() > DEAD_MS || stable.milliseconds() > STABLE_MS;
+    }*/
+
+    public void updateControllers() {
+        xController.setPIDF(xP, 0, xD, 0);
+        yController.setPIDF(yP, 0, yD, 0);
+        hController.setPIDF(hP, 0, hD, 0);
+    }
+
+    private double getSpeedSum() {
+        return Math.abs(leftFront.motor[0].getVelocity()) + Math.abs(leftBack.motor[0].getVelocity()) + Math.abs(rightBack.motor[0].getVelocity()) + Math.abs(rightFront.motor[0].getVelocity());
+    }
+    public boolean isBusy() {
+        return (getSpeedSum()) != 0;
+    }
+
+    /*public void goTo(Pose targetPose) {
+        if (timer == null) {
+            timer = new ElapsedTime();
+            stable = new ElapsedTime();
+        }
+        PoseVelocity2d rel;
+        Pose currentRobot;
+        rel = updatePoseEstimate();
+
+        updateControllers();
+        currentRobot = new Pose(pose);
+        if (targetPose.heading - currentRobot.heading > Math.PI) {
+            targetPose.heading -= 2 * Math.PI;
+        }
+        if (targetPose.heading - currentRobot.heading < -Math.PI) {
+            targetPose.heading += 2 * Math.PI;
+        }
+
+        double xPower = xController.calculate(currentRobot.x, targetPose.x);
+        double yPower = yController.calculate(currentRobot.y, targetPose.y);
+        double hPower = hController.calculate(currentRobot.heading, targetPose.heading);
+
+        double x_rotated = xPower * Math.cos(-currentRobot.heading) + yPower * Math.sin(-currentRobot.heading);
+        double y_rotated = xPower * Math.sin(-currentRobot.heading) + yPower * Math.cos(-currentRobot.heading);
+
+        hPower = Range.clip(hPower, -MAX_ROTATIONAL_SPEED, MAX_ROTATIONAL_SPEED);
+        x_rotated = Range.clip(x_rotated, -MAX_TRANSLATIONAL_SPEED, MAX_TRANSLATIONAL_SPEED);
+        y_rotated = Range.clip(y_rotated, -MAX_TRANSLATIONAL_SPEED, MAX_TRANSLATIONAL_SPEED);
+
+
+        setDrivePowers(new PoseVelocity2d(new Vector2d(x_rotated, y_rotated), hPower));
+    }*/
+
     public PoseVelocity2d updatePoseEstimate() {
         Twist2dDual<Time> twist = localizer.update();
         pose = pose.plus(twist.value());
 
+        poseWithoutBacktracking = poseWithoutBacktracking.plus(twist.value());
+
+        OverallError = new double[]{
+                Math.abs(poseWithoutBacktracking.position.x - pose.position.x),
+                Math.abs(poseWithoutBacktracking.position.y - pose.position.y),
+                Math.abs(poseWithoutBacktracking.heading.minus( pose.heading))
+        };
         poseHistory.add(pose);
         while (poseHistory.size() > 100) {
             poseHistory.removeFirst();
@@ -452,6 +568,92 @@ public final class MecanumDrive {
         estimatedPoseWriter.write(new PoseMessage(pose));
 
         return twist.velocity().value();
+    }
+    double[] percentage_Correction = new double[2], prevPose= new double[2];
+    private ArrayList<Double> totalChange = new ArrayList<>(2);
+    private double lastDrift = 0.0;
+    public static double angleError = 0.0;
+    private double[] lastErrors = new double[3];
+    private double[] errors = new double[2];
+
+    public void correctThePose(double[] change, Pose2d prevPose, Twist2d estTwist) {
+        Twist2dDual<Time> imuTwist = new Twist2dDual<>(
+                new Vector2dDual<>(
+                        new DualNum<Time>(new double[]{
+                                change[0],
+                                0.0,
+                        }).times(PARAMS.inPerTick),
+                        new DualNum<Time>(new double[]{
+                                change[1],
+                                0.0,
+                        }).times(PARAMS.inPerTick)
+                ),
+                new DualNum<>(new double[]{
+                        change[2],
+                        0.0,
+                })
+        );
+        Pose2d previousPose = prevPose;
+        previousPose = previousPose.plus(estTwist);
+        double[] prevPosePoses = new double[]{previousPose.position.x, previousPose.position.y};
+
+        //Find pose using imu twist
+        Pose2d newPose = prevPose;
+        newPose = newPose.plus(imuTwist.value());
+        double[] newPosePoses = new double[]{newPose.position.x, newPose.position.y};
+
+        for (int i = 0; i < 2; i++) {
+            errors[i] += newPosePoses[i] - prevPosePoses[i];
+        }
+
+        pose = new Pose2d(
+                pose.position.x + errors[0] - lastErrors[0],
+                pose.position.y + errors[1] - lastErrors[1],
+                (pose.heading.plus(angleError - lastErrors[2])).toDouble()
+        );
+
+        lastErrors = new double[]{
+                errors[0],
+                errors[1],
+                angleError
+        };
+    }
+    public void correctCurrentPose(ArrayList<ArrayList<Double>> changesInPos, ArrayList<Pose2d> posHistory, ArrayList<Twist2d> twistChanges, double totalAngleDrift) {
+        angleError += (totalAngleDrift - lastDrift);
+
+        //loop through each estimated pose
+        for (int i = 0; i < changesInPos.size(); i++) {
+            double timeDrift = 1.0 / changesInPos.size() * totalAngleDrift;
+            correctThePose(
+                    new double[]{
+                            changesInPos.get(i).get(0),
+                            changesInPos.get(i).get(1),
+                            changesInPos.get(i).get(2) + timeDrift},
+
+                    posHistory.get(i),
+                    twistChanges.get(i));
+        }
+
+        changesInPos.clear();
+        posHistory.clear();
+        twistChanges.clear();
+
+        lastDrift = angleError;
+    }
+
+
+    public double[] totalMovement() {
+        double[] currentPose = new double[]{pose.position.x, pose.position.y};
+        double[] difference = new double[2];
+        for (int i = 0; i <2; i++) {
+            difference[i] = Math.abs(currentPose[i] - prevPose[i]);
+            totalChange.set(i, totalChange.get(i) + difference[i]);
+            if (!totalChange.contains(0.0)) {
+                percentage_Correction[i] = 100 * Math.abs(OverallError[i]) / totalChange.get(i);
+            }
+        }
+        prevPose = currentPose;
+        return percentage_Correction;
     }
 
     private void drawPoseHistory(Canvas c) {

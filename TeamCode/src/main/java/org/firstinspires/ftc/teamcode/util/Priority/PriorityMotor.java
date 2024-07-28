@@ -41,6 +41,11 @@ public class PriorityMotor extends PriorityDevice{
         power = Utils.minMaxClip(power, -1.0, 1.0);
         this.power = power;
     }
+    public void setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior behavior) {
+        for (int i = 0; i < motor.length; i ++) {
+            motor[i].setZeroPowerBehavior(behavior);
+        }
+    }
     public void setPowerForced(double power) {
         for (int i = 0; i < motor.length; i ++) {
             motor[i].setPower(power);

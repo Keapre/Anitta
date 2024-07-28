@@ -3,10 +3,18 @@ package org.firstinspires.ftc.teamcode.subsystems.Drive;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.subsystems.Drive.MecanumDrive;
+import org.firstinspires.ftc.teamcode.MecanumDrive;
+import org.firstinspires.ftc.teamcode.util.GamePadController;
+
 //FOR THIS U NEED TUNED ODO
 public class WolfPackDrive {
+    private double speed = 1;
+    public static double TURN_SPEED = 0.75;
+    public static double SLOW_TURN_SPEED = 0.3;
+
+    public static boolean SLOW_MODE = false;
     public static double maxVelocityX = 77; // max positive straight velocity. TODO: Record using MaxVelStraightTest.
     public static double maxVelocityY = 51; // max positive sideways velocity. TODO: Record using MaxVelStrafeTest.
     public static double centripetalWeighting = 0.001; // TODO: adjust by trial and error for how much smoothing you need. Wolfpack calculates it but I can't be bothered.
@@ -128,7 +136,28 @@ public class WolfPackDrive {
         mecanumDrivebase.rightBack.setTargetPower(rightBackPower);
         mecanumDrivebase.rightFront.setTargetPower(rightFrontPower);
     }
+    public void driveFromController(GamePadController gamepad1) {
 
+        if(gamepad1.startOnce()) {
+            this.mecanumDrivebase.lazyImu.get().resetYaw();
+        }
+
+        double input_x = Math.pow(-gamepad1.left_stick_y, 3) * speed;
+        double input_y = Math.pow(-gamepad1.left_stick_x, 3) * speed;
+        Vector2d input = new Vector2d(input_x, input_y);
+
+        double input_turn = Math.pow(gamepad1.left_trigger - gamepad1.right_trigger, 3) * TURN_SPEED // Turn via triggers
+                + Math.pow(-gamepad1.right_stick_x, 3) * TURN_SPEED; // Turn via right stick
+        if (gamepad1.leftBumperOnce()) input_turn += SLOW_TURN_SPEED;
+        if (gamepad1.rightBumperOnce()) input_turn -= SLOW_TURN_SPEED;
+        input_turn = Range.clip(input_turn, -1, 1);
+
+        PoseVelocity2d rel = mecanumDrivebase.updatePoseEstimate();
+        trackPosition(mecanumDrivebase.pose);
+        input = mecanumDrivebase.pose.heading.inverse().times(input); // Field centric
+
+        driveWithCorrection(new PoseVelocity2d(input,input_turn),rel);
+    }
     /**
      * Drives with additional centripetal correction
      */

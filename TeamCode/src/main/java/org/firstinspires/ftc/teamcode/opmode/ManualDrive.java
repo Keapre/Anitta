@@ -41,8 +41,9 @@ public class ManualDrive extends LinearOpMode {
             g1.update();
             robot.update();
 
-            robot.drivetrain.driveFromController(g1);
+            robot.wolfPackDrive.driveFromController(g1);
         }
+
 
     }
 }

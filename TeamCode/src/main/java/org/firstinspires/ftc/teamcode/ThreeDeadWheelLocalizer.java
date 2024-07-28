@@ -1,8 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.DualNum;
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.Time;
+import com.acmerobotics.roadrunner.Twist2d;
 import com.acmerobotics.roadrunner.Twist2dDual;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.Vector2dDual;
@@ -14,8 +19,15 @@ import com.acmerobotics.roadrunner.ftc.RawEncoder;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.messages.ThreeDeadWheelInputsMessage;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @Config
 public final class ThreeDeadWheelLocalizer implements Localizer {
@@ -27,14 +39,21 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 
     public static Params PARAMS = new Params();
 
+    private Rotation2d deadWheelHeading= new Rotation2d(0.0,0.0);
+    private Rotation2d heading = new Rotation2d(0.0,0.0);
+    private ArrayList<ArrayList<Double>> listOfChanges= new ArrayList<>();
+    private ArrayList<Pose2d> listOfPoses= new ArrayList<>();
+    private ArrayList<Twist2d> listofEstimatedPosChanges= new ArrayList<>();
     public final Encoder par0, par1, perp;
-
+    private MecanumDrive drive;
+    public final IMU imu;
+    public ElapsedTime timer = new ElapsedTime();
     public final double inPerTick;
-
+    private double imuUpdateTime = 800;
     private int lastPar0Pos, lastPar1Pos, lastPerpPos;
     private boolean initialized;
 
-    public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, double inPerTick) {
+    public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, double inPerTick, IMU imu, @NonNull MecanumDrive drive) {
         // TODO: make sure your config has **motors** with these names (or change them)
         //   the encoders should be plugged into the slot matching the named motor
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
@@ -47,15 +66,25 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 
         this.inPerTick = inPerTick;
 
+        this.imu = imu;
+        this.timer.reset();
+        this.imu.resetYaw();
+
         FlightRecorder.write("THREE_DEAD_WHEEL_PARAMS", PARAMS);
     }
 
     public Twist2dDual<Time> update() {
+        boolean readImu = timer.milliseconds() >= imuUpdateTime;
         PositionVelocityPair par0PosVel = par0.getPositionAndVelocity();
         PositionVelocityPair par1PosVel = par1.getPositionAndVelocity();
         PositionVelocityPair perpPosVel = perp.getPositionAndVelocity();
 
         FlightRecorder.write("THREE_DEAD_WHEEL_INPUTS", new ThreeDeadWheelInputsMessage(par0PosVel, par1PosVel, perpPosVel));
+
+        if (readImu) {
+            YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
+            heading = Rotation2d.exp(angles.getYaw(AngleUnit.RADIANS));
+        }
 
         if (!initialized) {
             initialized = true;
@@ -74,6 +103,13 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
         int par1PosDelta = par1PosVel.position - lastPar1Pos;
         int perpPosDelta = perpPosVel.position - lastPerpPos;
 
+        double deadWheelHeadingDelta = (par0PosDelta - par1PosDelta) / (PARAMS.par0YTicks - PARAMS.par1YTicks);
+        double axial = (PARAMS.par0YTicks * par1PosDelta - PARAMS.par1YTicks * par0PosDelta) / (PARAMS.par0YTicks - PARAMS.par1YTicks);
+        double lateral = (PARAMS.perpXTicks / (PARAMS.par0YTicks - PARAMS.par1YTicks) * (par1PosDelta - par0PosDelta) + perpPosDelta);
+
+        ArrayList<Double> poseChange = new ArrayList<>(Arrays.asList(axial, lateral, deadWheelHeadingDelta));
+        listOfChanges.add(poseChange);
+        listOfPoses.add(drive.pose);
         Twist2dDual<Time> twist = new Twist2dDual<>(
                 new Vector2dDual<>(
                         new DualNum<Time>(new double[] {
@@ -90,10 +126,17 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
                         (par0PosVel.velocity - par1PosVel.velocity) / (PARAMS.par0YTicks - PARAMS.par1YTicks),
                 })
         );
-
+        listofEstimatedPosChanges.add(twist.value());
+        if (readImu) {
+            double headingDrift = heading.minus(deadWheelHeading);
+            drive.correctCurrentPose(listOfChanges, listOfPoses, listofEstimatedPosChanges,headingDrift);
+            timer.reset();
+        }
         lastPar0Pos = par0PosVel.position;
         lastPar1Pos = par1PosVel.position;
         lastPerpPos = perpPosVel.position;
+
+        deadWheelHeading = Rotation2d.exp((par0PosVel.position - par1PosVel.position) / (PARAMS.par0YTicks - PARAMS.par1YTicks));
 
         return twist;
     }
