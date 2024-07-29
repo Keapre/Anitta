@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -23,7 +24,6 @@ public class Intake {
 
     public enum CapacPos {
         UP,
-
         DOWN
     }
 
@@ -40,6 +40,7 @@ public class Intake {
     public long reverseTimeStart = 0;
     public TiltPos tiltPos;
     public CapacPos capacPos;
+    Robot2 robot2;
 
     public IntakeState intakeState, lastIntakeState;
 
@@ -53,7 +54,7 @@ public class Intake {
 
     final PriorityMotor intakeMotor;
 
-    public Intake(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
+    public Intake(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot2 robot2) {
         tilt = new PriorityServo(new CachingServo(hardwareMap.get(Servo.class, "intakeTilt")),
                 "intakeTilt",
                 3,
@@ -84,6 +85,7 @@ public class Intake {
         tiltPos = TiltPos.UP;
         intakeState = IntakeState.IDLE;
 
+        this.robot2 = robot2;
         hardwareQueue.addDevice(tilt);
         hardwareQueue.addDevice(capac);
         hardwareQueue.addDevice(intakeMotor);
@@ -131,7 +133,7 @@ public class Intake {
                 if(elapsed < timeReverse) {
                     intakeMotor.setTargetPower((motorSpeed[1] + motorSpeed[2]) / 2);
                 } else {
-                    intakeState = lastIntakeState;
+                    intakeState = IntakeState.IDLE;
                 }
             case IDLE:
                 intakeMotor.setTargetPower(motorSpeed[3]);

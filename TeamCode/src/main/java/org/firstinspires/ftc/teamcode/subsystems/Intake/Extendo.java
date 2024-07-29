@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Globals;
@@ -39,6 +40,7 @@ public class Extendo {
     double[] distancesThreeshold = new double[]{0, 0, 0}; //TODO: TUNE
     public static double lenght = 0;
 
+    Robot2 robot;
     double vel = 0;
     double power = 0;
 
@@ -52,7 +54,7 @@ public class Extendo {
     public static double targetPosition = 0;
     public ExtendoState extendoState = ExtendoState.IDLE;
 
-    public Extendo(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors) {
+    public Extendo(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors,Robot2 robot) {
         this.sensors = sensors;
         this.extendoState = ExtendoState.IDLE;
         if (Globals.RUNMODE == Perioada.AUTO) {
@@ -66,13 +68,15 @@ public class Extendo {
                 2
         );
         hardwareQueue.addDevice(extendoMotor);
+        this.robot = robot;
         pid = new EricPid(kP, kI, kD);
     }
 
     void resetSlidesEncoder() {
         eMotor.setPower(0);
         eMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        eMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        eMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         targetPosition = 0;
 
         eMotor.setPower(0);

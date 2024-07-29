@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -49,6 +51,7 @@ public class Outtake {
     public  boolean dropRightPixel = false;
     public final PriorityServo servoArmLeft, servoArmRight;
 
+    Robot2 robot;
     public final double clawOpen = 0.7;
     public final double clawClosed = 0.3;
 
@@ -68,7 +71,7 @@ public class Outtake {
     public double deltaRotateValue = 0.1;
     public double scoringArmRight = 0.3;
 
-    public Outtake(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
+    public Outtake(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Robot2 robot) {
         clawLeft = new PriorityServo(
                 new CachingServo(hardwareMap.get(Servo.class, "clawLeft")),
                 "clawLeft", 0.2, PriorityServo.ServoType.AXON_MINI, clawClosed, clawClosed, false);
@@ -94,6 +97,7 @@ public class Outtake {
 
         currentState = FourBarState.TRANSFER_INTAKE;
         clawState = ClawState.CLOSE;
+        this.robot = robot;
         hardwareQueue.addDevice(clawLeft);
         hardwareQueue.addDevice(rotateServo);
         hardwareQueue.addDevice(outtakebar);
@@ -194,6 +198,7 @@ public class Outtake {
             case IDLE:
                 break;
             case OUTTAKE_POSITION:
+                robot.slides.checkForIntake();
                 setPositionClaw(clawClosed);
                 setClawState(ClawState.CLOSE);
                 servoArmLeft.setPosition(scoringArmLeft);
@@ -203,6 +208,7 @@ public class Outtake {
                 setOuttakeState(FourBarState.IDLE);
                 break;
             case TRANSFER_INTAKE:
+                robot.slides.checkForIntake();
                 servoArmLeft.setPosition(defaultArmLeft);
                 servoArmRight.setPosition(defaultArmRight);
                 outtakebar.setPosition(defaultOuttakeBarPos);

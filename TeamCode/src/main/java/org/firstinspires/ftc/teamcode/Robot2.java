@@ -40,15 +40,15 @@ public class Robot2 {
 
         sensors = new Sensors(hardwareMap, hardwareQueue);
 
-        intake = new Intake(hardwareMap, hardwareQueue);
+        intake = new Intake(hardwareMap, hardwareQueue,this);
 
         plane = new Plane(hardwareMap, hardwareQueue);
 
-        slides = new Slides(hardwareMap, hardwareQueue,sensors);
+        slides = new Slides(hardwareMap, hardwareQueue,sensors,this);
 
-        extendo = new Extendo(hardwareMap, hardwareQueue,sensors);
+        extendo = new Extendo(hardwareMap, hardwareQueue,sensors,this);
 
-        outtake = new Outtake(hardwareMap, hardwareQueue);
+        outtake = new Outtake(hardwareMap, hardwareQueue,this);
 
     }
 

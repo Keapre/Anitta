@@ -11,6 +11,18 @@ import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.SmartGameTimer;
 
+
+/*
+TODO:
+TO TUNE:
+1.outtake positions(ASAP)
+2.Slides (inch per tick)
+3.intake positions
+4.LOCALIZATION / rr 1.0
+5.extendo
+
+ */
+
 @TeleOp
 public class DonderDrive extends LinearOpMode {
 
@@ -91,7 +103,7 @@ public class DonderDrive extends LinearOpMode {
                 robot.intake.intakeState = Intake.IntakeState.IDLE;
             }
         }
-        if(pixelCount == 2 || (pixelCount == 1 && robot.drivetrain.isBusy())) {
+        if(pixelCount == 2 || (pixelCount == 1 && robot.drivetrain.isBusy())) { // maybe 1 pixel works?
             robot.intake.reverseForTime(700);
             robot.intake.capacPos = Intake.CapacPos.UP;
         }

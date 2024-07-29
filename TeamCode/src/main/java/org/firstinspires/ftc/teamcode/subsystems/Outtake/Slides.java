@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Globals;
@@ -17,6 +18,8 @@ import org.firstinspires.ftc.teamcode.util.control.EricPid;
 
 @Config
 public class Slides {
+
+    Robot2 robot;
     public enum SlidesState {
         MANUAL,
         IDLE,
@@ -50,7 +53,7 @@ public class Slides {
     public static double targetPosition = 0;
     public SlidesState slidesState = SlidesState.IDLE;
 
-    public Slides(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors) {
+    public Slides(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors,Robot2 robot) {
         this.sensors = sensors;
         this.slidesState = SlidesState.IDLE;
         if (Globals.RUNMODE == Perioada.AUTO) {
@@ -67,17 +70,17 @@ public class Slides {
 
         hardwareQueue.addDevice(slideMotor);
         pid = new EricPid(kP, kI, kD);
+        this.robot = robot;
     }
 
     void resetSlidesEncoder() {
-        sMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        sMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        sMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        sMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         sMotor1.setPower(0);
         sMotor1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         sMotor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         sMotor2.setPower(0);
         sMotor2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        sMotor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         targetPosition = 0;
 
         sMotor1.setPower(0);
@@ -115,8 +118,8 @@ public class Slides {
     }
 
     public void AutoUpdate() {
-        lenght = sensors.getExtendoPos()* ticksToInches; //TODO:USE the sensor class for this
-        vel = sensors.getExtendoVelocity() * ticksToInches;
+        lenght = sensors.getSlidePos()* ticksToInches;
+        vel = sensors.getSlideVelocity() * ticksToInches;
         if (abs(lenght - targetLength) < 0.5) {
             slidesState = SlidesState.IDLE;
         }
@@ -124,6 +127,13 @@ public class Slides {
         slideMotor.setTargetPower(power);
     }
 
+    public void checkForIntake() {
+        if(robot.outtake.currentState == Outtake.FourBarState.TRANSFER_INTAKE) {
+            firstThreeshold();
+        }else if(robot.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION) {
+            secondThreeshold();
+        }
+    }
     public void update() {
         lenght = sensors.getSlidePos()* ticksToInches; //TODO:USE the sensor class for this
         vel = sensors.getSlideVelocity()     * ticksToInches;
@@ -135,12 +145,15 @@ public class Slides {
                 slideMotor.setTargetPower(0);
                 break;
             case FIRST_THRESHOLD:
+                firstThreeshold();
                 AutoUpdate();
                 break;
             case SECOND_THREESHOLD:
+                secondThreeshold();
                 AutoUpdate();
                 break;
             case THIRD_THREESHOLD:
+                thirdThreeshold();
                 AutoUpdate();
                 break;
         }

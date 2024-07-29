@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmode.tests;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
@@ -19,8 +20,9 @@ public class ExtendoMaxSlide extends LinearOpMode {
         waitForStart();
         hardwareQueue = new HardwareQueue();
         g1 = new GamePadController(gamepad1);
+        Robot2 robot = new Robot2(hardwareMap);
         sensors = new Sensors(hardwareMap,hardwareQueue);
-        extendo = new Extendo(hardwareMap, hardwareQueue,sensors);
+        extendo = new Extendo(hardwareMap, hardwareQueue,sensors,robot);
         while (opModeIsActive()) {
             if(g1.dpadUpOnce()) extendo.manual_extend();
             else if(g1.dpadDownOnce()){
