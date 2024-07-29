@@ -9,6 +9,7 @@ import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
 
+
 @Config
 public class Outtake {
 
@@ -16,20 +17,26 @@ public class Outtake {
         IDLE,
         CHANGING_ROTATE,
         TRANSFER_INTAKE,
+
+        DROP_LEFT,
+        DROP_RIGHT,
         OUTTAKE_POSITION,
         DROP
     }
+
     boolean busy = false;
 
     public static double releaseTime = 250;
     public static double timer = 0;
     outtakeState currentState = outtakeState.IDLE;
-    public final PriorityServo clawLeft,clawRight;
+    public final PriorityServo clawLeft, clawRight;
     public final PriorityServo rotateServo;
 
     public final PriorityServo outtakebar;
 
-    public final PriorityServo servoArmLeft,servoArmRight;
+    public static boolean dropLeftPixel = false;
+    public static boolean dropRightPixel = false;
+    public final PriorityServo servoArmLeft, servoArmRight;
 
     public final double clawOpen = 0.7;
     public final double clawClosed = 0.3;
@@ -81,7 +88,10 @@ public class Outtake {
         hardwareQueue.addDevice(servoArmLeft);
         hardwareQueue.addDevice(servoArmRight);
     }
-    public boolean isBusy() {return busy;}
+
+    public boolean isBusy() {
+        return busy;
+    }
 
     public boolean readyToRetract() {
         return Globals.NUM_PIXELS <= 0 && !busy;
@@ -92,14 +102,15 @@ public class Outtake {
     }
 
     public void addRotate() {
-        currentRotatePos+=deltaRotateValue;
+        currentRotatePos += deltaRotateValue;
     }
 
     public void subRotate() {
-        currentRotatePos-=deltaRotateValue;
+        currentRotatePos -= deltaRotateValue;
     }
 
     boolean releasingTwo = false;
+
     public void releaseOne() {
         if (!busy) {
             if (Globals.NUM_PIXELS == 2) {
@@ -114,6 +125,7 @@ public class Outtake {
             timer = System.currentTimeMillis();
         }
     }
+
     public void releaseOne2() {
         if (!busy) {
             if (Globals.NUM_PIXELS == 2) {
@@ -130,10 +142,12 @@ public class Outtake {
     }
 
     public void releaseTwo() {
+
         releaseOne();
         releasingTwo = true;
     }
-    public void updateRelease(){
+
+    public void updateRelease() {
         if (System.currentTimeMillis() - timer >= releaseTime) {
             busy = false;
             if (releasingTwo) {
@@ -147,7 +161,8 @@ public class Outtake {
         clawLeft.setPosition(target);
         clawRight.setPosition(target);
     }
-    public void update(){
+
+    public void update() {
         switch (currentState) {
             case IDLE:
                 break;
@@ -162,9 +177,17 @@ public class Outtake {
                 outtakebar.setPosition(scoringOuttakeBarPose);
                 setOuttakeState(outtakeState.DROP);
                 break;
+            case DROP_RIGHT:
+                clawRight.setPosition(clawOpen);
+                setOuttakeState(outtakeState.IDLE);
+                break;
             case DROP:
                 releaseTwo();
                 setOuttakeState(outtakeState.TRANSFER_INTAKE);
+            case DROP_LEFT:
+                clawLeft.setPosition(clawOpen);
+                setOuttakeState(outtakeState.IDLE);
+                break;
             case TRANSFER_INTAKE:
                 setPositionClaw(clawOpen);
                 servoArmLeft.setPosition(defaultArmLeft);

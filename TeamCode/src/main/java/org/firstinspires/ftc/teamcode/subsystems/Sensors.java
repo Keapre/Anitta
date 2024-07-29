@@ -61,7 +61,7 @@ public class Sensors {
 
     public boolean huskyLensEnabled = false;
 
-    public Sensors(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Robot robot) {
+    public Sensors(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
         this.hardwareMap = hardwareMap;
         intakePixelLeft = hardwareMap.get(DistanceSensor.class, "pixelLeft");
         intakePixelRight = hardwareMap.get(DistanceSensor.class, "pixelRight");
@@ -97,6 +97,9 @@ public class Sensors {
         expansionHubUpdate();
         updateTelemetry();
     }
+
+
+    public void updatePixels()
     public void updateControlHub() {
         imuJustUpdated = false;
         huskyJustUpdated = false;
@@ -180,14 +183,7 @@ public class Sensors {
     public HuskyLens.Block[] getHuskyLensBlocks() {
         return huskyLensBlocks;
     }
-    public void updateDrivetrainMotorCurrents() {
-        leftFrontMotorCurrent = robot.drivetrain.leftFront.motor[0].getCurrent(CurrentUnit.MILLIAMPS);
-        leftRearMotorCurrent = robot.drivetrain.leftBack.motor[0].getCurrent(CurrentUnit.MILLIAMPS);
-        rightRearMotorCurrent = robot.drivetrain.rightBack.motor[0].getCurrent(CurrentUnit.MILLIAMPS);
-        rightFrontMotorCurrent = robot.drivetrain.rightFront.motor[0].getCurrent(CurrentUnit.MILLIAMPS);
 
-
-    }
     public double getNormalizedIMUHeading() {
         return getImuHeading() - (numRotations*(2*Math.PI));
     }

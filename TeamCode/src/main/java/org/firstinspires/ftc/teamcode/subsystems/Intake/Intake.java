@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
+import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
 
@@ -52,7 +53,7 @@ public class Intake {
 
     final PriorityMotor intakeMotor;
 
-    public Intake(HardwareMap hardwareMap) {
+    public Intake(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
         tilt = new PriorityServo(new CachingServo(hardwareMap.get(Servo.class, "intakeTilt")),
                 "intakeTilt",
                 3,
@@ -82,6 +83,10 @@ public class Intake {
         capacPos = CapacPos.UP;
         tiltPos = TiltPos.UP;
         intakeState = IntakeState.IDLE;
+
+        hardwareQueue.addDevice(tilt);
+        hardwareQueue.addDevice(capac);
+        hardwareQueue.addDevice(intakeMotor);
     }
 
 
@@ -143,6 +148,7 @@ public class Intake {
         }
         intakeState = IntakeState.REVERSE_FOR_TIME;
     }
+
 
     public void intakeOff() {
         intakeState = IntakeState.IDLE;
