@@ -8,34 +8,45 @@ import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
+import org.firstinspires.ftc.teamcode.util.Utils;
 
 
 @Config
 public class Outtake {
 
-    public enum outtakeState {
+    public enum FourBarState {
         IDLE,
         CHANGING_ROTATE,
         TRANSFER_INTAKE,
-
-        DROP_LEFT,
-        DROP_RIGHT,
         OUTTAKE_POSITION,
-        DROP
+    }
+
+    public enum ClawState {
+        OPEN,
+        CLOSE,
+
+        LEFT_CLOSE,
+        RIGHT_CLOSE,
+
+        LEFT_OPEN,
+        RIGHT_OPEN
     }
 
     boolean busy = false;
 
     public static double releaseTime = 250;
     public static double timer = 0;
-    outtakeState currentState = outtakeState.IDLE;
+    public FourBarState currentState = FourBarState.IDLE;
+    public FourBarState lastImportant = FourBarState.TRANSFER_INTAKE;
+
+    public ClawState clawState = ClawState.OPEN;
     public final PriorityServo clawLeft, clawRight;
     public final PriorityServo rotateServo;
 
     public final PriorityServo outtakebar;
 
-    public static boolean dropLeftPixel = false;
-    public static boolean dropRightPixel = false;
+    public  boolean dropLeftPixel = false;
+    public  boolean dropRightPixel = false;
     public final PriorityServo servoArmLeft, servoArmRight;
 
     public final double clawOpen = 0.7;
@@ -81,7 +92,8 @@ public class Outtake {
                 new CachingServo(hardwareMap.get(Servo.class, "servoArmRight")),
                 "servoArmRight", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmRight, defaultArmRight, false);
 
-        currentState = outtakeState.IDLE;
+        currentState = FourBarState.TRANSFER_INTAKE;
+        clawState = ClawState.CLOSE;
         hardwareQueue.addDevice(clawLeft);
         hardwareQueue.addDevice(rotateServo);
         hardwareQueue.addDevice(outtakebar);
@@ -97,16 +109,24 @@ public class Outtake {
         return Globals.NUM_PIXELS <= 0 && !busy;
     }
 
-    public void setOuttakeState(outtakeState newState) {
-        currentState = newState;
+    public void setOuttakeState(FourBarState newState) {
+        if(currentState!=newState)
+            currentState = newState;
     }
+    public void setClawState(ClawState newState) {
 
+        if(clawState!=newState) clawState = newState;
+    }
     public void addRotate() {
+
         currentRotatePos += deltaRotateValue;
+        Utils.minMaxClip(currentRotatePos, 0, 1);
+
     }
 
     public void subRotate() {
         currentRotatePos -= deltaRotateValue;
+        Utils.minMaxClip(currentRotatePos, 0, 1);
     }
 
     boolean releasingTwo = false;
@@ -141,6 +161,13 @@ public class Outtake {
         }
     }
 
+    public void pickupLeft() {
+        clawLeft.setPosition(clawOpen);
+    }
+
+    public void pickupRight() {
+        clawRight.setPosition(clawOpen);
+    }
     public void releaseTwo() {
 
         releaseOne();
@@ -166,37 +193,47 @@ public class Outtake {
         switch (currentState) {
             case IDLE:
                 break;
-            case CHANGING_ROTATE:
-                rotateServo.setPosition(currentRotatePos);
-                setOuttakeState(outtakeState.IDLE);
-                break;
             case OUTTAKE_POSITION:
                 setPositionClaw(clawClosed);
+                setClawState(ClawState.CLOSE);
                 servoArmLeft.setPosition(scoringArmLeft);
                 servoArmRight.setPosition(scoringArmRight);
                 outtakebar.setPosition(scoringOuttakeBarPose);
-                setOuttakeState(outtakeState.DROP);
-                break;
-            case DROP_RIGHT:
-                clawRight.setPosition(clawOpen);
-                setOuttakeState(outtakeState.IDLE);
-                break;
-            case DROP:
-                releaseTwo();
-                setOuttakeState(outtakeState.TRANSFER_INTAKE);
-            case DROP_LEFT:
-                clawLeft.setPosition(clawOpen);
-                setOuttakeState(outtakeState.IDLE);
+                lastImportant = FourBarState.OUTTAKE_POSITION;
+                setOuttakeState(FourBarState.IDLE);
                 break;
             case TRANSFER_INTAKE:
-                setPositionClaw(clawOpen);
                 servoArmLeft.setPosition(defaultArmLeft);
                 servoArmRight.setPosition(defaultArmRight);
                 outtakebar.setPosition(defaultOuttakeBarPos);
-                setPositionClaw(clawClosed);
-                setOuttakeState(outtakeState.IDLE);
+                lastImportant = FourBarState.TRANSFER_INTAKE;
+                setPositionClaw(clawOpen);
+                setClawState(ClawState.OPEN);
+                setOuttakeState(FourBarState.IDLE);
                 break;
         }
+        switch (clawState) {
+            case OPEN:
+                releaseTwo();
+                break;
+            case CLOSE:
+                clawLeft.setPosition(clawClosed);
+                clawRight.setPosition(clawClosed);
+                break;
+            case LEFT_CLOSE:
+                clawLeft.setPosition(clawClosed);
+                break;
+            case RIGHT_CLOSE:
+                clawRight.setPosition(clawClosed);
+                break;
+            case LEFT_OPEN:
+                clawLeft.setPosition(clawOpen);
+                break;
+            case RIGHT_OPEN:
+                clawRight.setPosition(clawOpen);
+                break;
+        }
+        rotateServo.setPosition(currentRotatePos);
     }
 
 }

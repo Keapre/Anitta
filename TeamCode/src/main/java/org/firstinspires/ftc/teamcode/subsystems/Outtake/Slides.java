@@ -25,6 +25,7 @@ public class Slides {
         THIRD_THREESHOLD, //MAX
     }
 
+    public
     CachingDcMotorEx sMotor1, sMotor2;
     Sensors sensors;
     public PriorityMotor slideMotor;

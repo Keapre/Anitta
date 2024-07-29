@@ -167,7 +167,9 @@ public class Intake {
         intakeState = IntakeState.IDLE;
     }
     public void addTilt(double adding) {
-        tilt.setPosition(tilt.getPos() + adding);
+        currentTilt+=adding;
+        currentTilt = Math.min(1.0, Math.max(0.0, currentTilt));
+        tilt.setPosition(currentTilt);
     }
 
     public void LowTilt() {

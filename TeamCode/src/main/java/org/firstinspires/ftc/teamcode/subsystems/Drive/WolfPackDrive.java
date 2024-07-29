@@ -14,7 +14,7 @@ public class WolfPackDrive {
     public static double TURN_SPEED = 0.75;
     public static double SLOW_TURN_SPEED = 0.3;
 
-    public static boolean SLOW_MODE = false;
+    public boolean SLOW_MODE = false;
     public static double maxVelocityX = 77; // max positive straight velocity. TODO: Record using MaxVelStraightTest.
     public static double maxVelocityY = 51; // max positive sideways velocity. TODO: Record using MaxVelStrafeTest.
     public static double centripetalWeighting = 0.001; // TODO: adjust by trial and error for how much smoothing you need. Wolfpack calculates it but I can't be bothered.
@@ -136,11 +136,13 @@ public class WolfPackDrive {
         mecanumDrivebase.rightBack.setTargetPower(rightBackPower);
         mecanumDrivebase.rightFront.setTargetPower(rightFrontPower);
     }
+    public void resetYaw() {
+        this.mecanumDrivebase.lazyImu.get().resetYaw();
+    }
+
     public void driveFromController(GamePadController gamepad1) {
 
-        if(gamepad1.startOnce()) {
-            this.mecanumDrivebase.lazyImu.get().resetYaw();
-        }
+
 
         double input_x = Math.pow(-gamepad1.left_stick_y, 3) * speed;
         double input_y = Math.pow(-gamepad1.left_stick_x, 3) * speed;

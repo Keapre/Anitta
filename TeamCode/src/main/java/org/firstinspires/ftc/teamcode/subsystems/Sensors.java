@@ -14,9 +14,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.TelemetryUtil;
+
+import javax.microedition.khronos.opengles.GL;
 
 public class Sensors {
     private LynxModule controlHub, expansionHub;
@@ -99,7 +102,7 @@ public class Sensors {
     }
 
 
-    public void updatePixels()
+
     public void updateControlHub() {
         imuJustUpdated = false;
         huskyJustUpdated = false;
@@ -151,6 +154,7 @@ public class Sensors {
         if (getRightDistance() <= pixelThreeshold) {
             cnt++;
         }
+        Globals.NUM_PIXELS = cnt;
         return cnt;
     }
 

@@ -5,6 +5,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.SmartGameTimer;
 
@@ -20,7 +23,9 @@ public class DonderDrive extends LinearOpMode {
     public static double VISION_CLOSE_DIST = 5;
     private SmartGameTimer smartGameTimer;
     private GamePadController g1;
-    private Robot robot;
+    private Robot2 robot;
+
+    int pixelCount = 0;
     private long lastLoopFinish = 0;
     @Override
     public void runOpMode() throws InterruptedException {
@@ -29,9 +34,8 @@ public class DonderDrive extends LinearOpMode {
 
         g1 = new GamePadController(gamepad1);
 
-        g1.update();
 
-        robot = new Robot(hardwareMap);
+        robot = new Robot2(hardwareMap);
         telemetry.addLine("Initialized");
         telemetry.update();
 
@@ -42,12 +46,106 @@ public class DonderDrive extends LinearOpMode {
             g1.update();
             robot.update();
 
-            robot.wolfPackDrive.driveFromController(g1);
+            intakeUpdate();
+            updateDriveTrain();
+            updatePlane();
+            updateExtendo();
+            updateSlides();
+            outtakeUpdate();
+        }
+    }
+
+    public void outtakeUpdate() {
+
+        if(g1.xOnce()) {
+            if(robot.outtake.clawState == Outtake.ClawState.OPEN || robot.outtake.clawState == Outtake.ClawState.LEFT_OPEN || robot.outtake.clawState == Outtake.ClawState.RIGHT_OPEN) {
+                robot.outtake.clawState = Outtake.ClawState.CLOSE;
+            } else {
+                robot.outtake.clawState = Outtake.ClawState.RIGHT_OPEN;
+            }
+        }
+        if(g1.bOnce()) {
+            if(robot.outtake.clawState == Outtake.ClawState.OPEN || robot.outtake.clawState == Outtake.ClawState.LEFT_OPEN || robot.outtake.clawState == Outtake.ClawState.RIGHT_OPEN) {
+                robot.outtake.clawState = Outtake.ClawState.CLOSE;
+            } else {
+                robot.outtake.clawState = Outtake.ClawState.LEFT_OPEN;
+            }
+        }
+
+        if(g1.yOnce()) {
+            if(robot.outtake.lastImportant == Outtake.FourBarState.TRANSFER_INTAKE) {
+                robot.outtake.currentState = Outtake.FourBarState.OUTTAKE_POSITION;
+            } else {
+                robot.outtake.currentState = Outtake.FourBarState.TRANSFER_INTAKE;
+            }
         }
     }
 
     public void intakeUpdate() {
+        pixelCount = robot.sensors.pixelCounter();
+        if(g1.aOnce()) {
+            if(robot.intake.intakeState == Intake.IntakeState.IDLE) {
+                robot.intake.capacPos = Intake.CapacPos.DOWN;
+                robot.intake.intakeState = Intake.IntakeState.FORWARD;
+            } else if(robot.intake.intakeState == Intake.IntakeState.FORWARD) {
+                robot.intake.intakeState = Intake.IntakeState.IDLE;
+            }
+        }
+        if(pixelCount == 2 || (pixelCount == 1 && robot.drivetrain.isBusy())) {
+            robot.intake.reverseForTime(700);
+            robot.intake.capacPos = Intake.CapacPos.UP;
+        }
+        if(g1.dpadDownOnce()) {
+            robot.intake.addTilt(-0.1);
+        }
+        if(g1.dpadUpOnce()) {
+            robot.intake.addTilt(0.1);
+        }
 
+        robot.intake.update();
+    }
+
+    public void updateSlides(){
+        if(g1.leftTrigger()) {
+            robot.slides.manual_retract();
+        } else if(g1.rightTrigger()) {
+            robot.slides.manual_extend();
+        } else {
+            robot.slides.manual_IDLE();
+        }
+
+        robot.slides.update();
+    }
+
+    public void updateExtendo() {
+        if(g1.leftBumper()) {
+            robot.extendo.manual_extend();
+        }else if(g1.rightBumper()) {
+            robot.extendo.manual_retract();
+        } else {
+            robot.extendo.manual_IDLE();
+        }
+
+        robot.extendo.update();
+    }
+    void updateDriveTrain() {
+        if(g1.leftStickButtonOnce()) {
+            robot.wolfPackDrive.SLOW_MODE = !robot.wolfPackDrive.SLOW_MODE;
+        }
+
+        if(g1.rightStickButtonOnce()) {
+            robot.wolfPackDrive.resetYaw();
+        }
+
+        robot.wolfPackDrive.driveFromController(g1);
+    }
+
+    void updatePlane() {
+        if(g1.startOnce()) {
+            robot.plane.setOut();
+        }
+
+        robot.plane.update();
     }
 
 
