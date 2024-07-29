@@ -19,6 +19,7 @@ public class PriorityServo extends PriorityDevice {
         }
     }
 
+
     public ServoType type;
     public CachingServo[] servo;
 
