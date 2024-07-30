@@ -117,7 +117,7 @@ public class Slides {
         slidesState = SlidesState.IDLE;
     }
 
-    public void AutoUpdate() {
+    public void AutoUpdate() { // no feedforward
         lenght = sensors.getSlidePos()* ticksToInches;
         vel = sensors.getSlideVelocity() * ticksToInches;
         if (abs(lenght - targetLength) < 0.5) {
@@ -126,6 +126,14 @@ public class Slides {
         power = pid.update(lenght) + kgSlides;
         slideMotor.setTargetPower(power);
     }
+
+/*
+    public void feedforward() {
+        double error = targetLength - lenght;
+
+        if(targetLength)
+    }
+*/
 
     public void checkForIntake() {
         if(robot.outtake.currentState == Outtake.FourBarState.TRANSFER_INTAKE) {
