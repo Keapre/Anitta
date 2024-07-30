@@ -6,21 +6,24 @@ import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
+import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
+
 import java.util.concurrent.Callable;
 
 public class ActionUtil {
     public static class DcMotorExPowerAction implements Action {
         double power;
-        DcMotorEx motor;
+        PriorityMotor motor;
 
-        public DcMotorExPowerAction(DcMotorEx motor, double power) {
+        public DcMotorExPowerAction(PriorityMotor motor, double power) {
             this.power = power;
             this.motor = motor;
         }
 
         @Override
         public boolean run(TelemetryPacket packet) {
-            motor.setPower(power);
+            motor.motor[0].setPower(power);
             return false;
         }
     }
@@ -44,16 +47,16 @@ public class ActionUtil {
 
     public static class ServoPositionAction implements Action {
         double position;
-        Servo servo;
+        PriorityServo servo;
 
-        public ServoPositionAction(Servo servo, double position) {
+        public ServoPositionAction(PriorityServo servo, double position) {
             this.servo = servo;
             this.position = position;
         }
 
         @Override
         public boolean run(TelemetryPacket packet) {
-            servo.setPosition(position);
+            servo.servo[0].setPosition(position);
             return false;
         }
     }

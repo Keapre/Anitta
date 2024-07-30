@@ -1,10 +1,20 @@
 package org.firstinspires.ftc.teamcode.subsystems.Intake;
 
+import android.provider.Settings;
+
+import androidx.annotation.NonNull;
+
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
+import com.acmerobotics.roadrunner.SequentialAction;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
+import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -46,7 +56,7 @@ public class Intake {
 
     public double currentTilt = 0,lastTilt = 0;
     double[] tiltPositions = new double[]{0.0, 0.5, 1.0};
-    double[] capacPositions = new double[]{0.0, 1.0};
+    double[] capacPositions = new double[]{0.89, 0.19}; // 0 - open ,1 - closed
 
     double[] motorSpeed = new double[]{0.7, -0.7,-0.3, 0.0};
 
@@ -174,6 +184,34 @@ public class Intake {
         tilt.setPosition(currentTilt);
     }
 
+    public Action setTiltHeight(int setPoint) {
+        return new ActionUtil.ServoPositionAction(tilt,tiltPositions[setPoint]);
+    }
+
+    public Action intakeMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
+    }
+
+    public Action reverseMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[1]);
+    }
+
+    public Action offMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
+    }
+
+    public Action capacDeschis() {
+        return new ActionUtil.ServoPositionAction(capac,capacPositions[0]);
+    }
+
+    public Action capacInchis() {
+        return new ActionUtil.ServoPositionAction(capac,capacPositions[1]);
+    }
+
+    public void intakeReverseInstant() {
+        intakeMotor.motor[0].setPower(motorSpeed[1]);
+    }
+
     public void LowTilt() {
         tiltPos = TiltPos.DOWN;
     }
@@ -184,6 +222,84 @@ public class Intake {
 
     public void HighTilt() {
         tiltPos = TiltPos.UP;
+    }
+
+    private class IntakeCount implements  Action {
+        private long waitUntil;
+        private long finalTime;
+        private int pixelCount;
+        private boolean done;
+        private boolean jammed;
+        public IntakeCount(boolean fast) {
+            this.waitUntil = System.currentTimeMillis() + 300;
+            this.finalTime = System.currentTimeMillis() + (fast ? 3000 : 6000);
+
+        }
+        public Action intakeCount(boolean fast) {
+            return new SequentialAction(
+                    new IntakeCount(fast),
+                    reverseMotor()
+            );
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            if(done) {
+                return System.currentTimeMillis() < waitUntil;
+            }
+
+            if(jammed) {
+                if(!intakeMotor.motor[0].isOverCurrent()) {
+                    this.jammed = false;
+                    return System.currentTimeMillis() < finalTime;
+                }
+                if (System.currentTimeMillis() >= waitUntil) {
+                    intakeReverseInstant();
+                    return System.currentTimeMillis() < finalTime;
+                }
+            }
+            if (intakeMotor.motor[0].isOverCurrent()) {
+                this.jammed = true;
+                return System.currentTimeMillis() < finalTime;
+            }
+            pixelCount = robot2.sensors.pixelCounter();
+            if (pixelCount >= 2) {
+                done = true;
+                return true;
+            }
+            return System.currentTimeMillis() < finalTime;
+        }
+    }
+    private class changeTiltState implements Action {
+
+        TiltPos state;
+
+        public changeTiltState(TiltPos state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            tiltPos = state;
+            return false;
+        }
+    }
+    public Action changeState(TiltPos state) {
+        return new changeTiltState(state);
+    }
+    private class changeIntakeMotorState implements Action {
+
+        IntakeState state;
+
+        public changeIntakeMotorState(IntakeState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            intakeState = state;
+            return false;
+        }
+    }
+    public Action changeintakeState(IntakeState state) {
+        return new changeIntakeMotorState(state);
     }
 
 }

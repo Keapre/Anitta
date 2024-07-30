@@ -1,11 +1,18 @@
 package org.firstinspires.ftc.teamcode.subsystems.Outtake;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
+import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -193,6 +200,36 @@ public class Outtake {
         clawRight.setPosition(target);
     }
 
+    public Action clawOpen() {
+        return new ParallelAction(
+                new ActionUtil.ServoPositionAction(clawLeft,clawOpen),
+                new ActionUtil.ServoPositionAction(clawRight,clawOpen)
+        );
+    }
+    public Action clawClosed() {
+        return new ParallelAction(
+                new ActionUtil.ServoPositionAction(clawLeft,clawClosed),
+                new ActionUtil.ServoPositionAction(clawRight,clawClosed)
+        );
+    }
+
+    public Action scoringPos() {
+        setOuttakeState(FourBarState.OUTTAKE_POSITION);
+        return new ParallelAction(
+                new ActionUtil.ServoPositionAction(servoArmLeft,scoringArmLeft),
+                new ActionUtil.ServoPositionAction(servoArmRight,scoringArmRight),
+                new ActionUtil.ServoPositionAction(outtakebar,scoringOuttakeBarPose)
+        );
+    }
+
+    public Action transferPos() {
+        setOuttakeState(FourBarState.TRANSFER_INTAKE);
+        return new ParallelAction(
+                new ActionUtil.ServoPositionAction(servoArmRight,defaultArmRight),
+                new ActionUtil.ServoPositionAction(servoArmLeft,defaultArmLeft),
+                new ActionUtil.ServoPositionAction(outtakebar,defaultOuttakeBarPos)
+        );
+    }
     public void update() {
         switch (currentState) {
             case IDLE:
@@ -241,5 +278,35 @@ public class Outtake {
         }
         rotateServo.setPosition(currentRotatePos);
     }
+    private class ChangeClawState implements Action {
 
+        ClawState state;
+
+        public ChangeClawState(ClawState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            clawState = state;
+            return false;
+        }
+    }
+    public Action changeClawState(ClawState state) {
+        return new ChangeClawState(state);
+    }
+    private class ChangeArmState implements Action {
+
+        FourBarState state;
+        public ChangeArmState(FourBarState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            currentState = state;
+            return false;
+        }
+    }
+    public Action changeArmState(FourBarState state) {
+        return new ChangeArmState(state);
+    }
 }

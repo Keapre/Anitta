@@ -2,7 +2,11 @@ package org.firstinspires.ftc.teamcode.subsystems.Outtake;
 
 import static java.lang.Math.abs;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -74,8 +78,8 @@ public class Slides {
     }
 
     void resetSlidesEncoder() {
-        sMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        sMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        sMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        sMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         sMotor1.setPower(0);
         sMotor1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         sMotor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
@@ -87,6 +91,7 @@ public class Slides {
         sMotor2.setPower(0);
     }
 
+
     public void firstThreeshold() {
         slidesState = SlidesState.FIRST_THRESHOLD;
         setTargetLength(distancesThreeshold[0]);
@@ -96,6 +101,7 @@ public class Slides {
         slidesState = SlidesState.SECOND_THREESHOLD;
         setTargetLength(distancesThreeshold[1]);
     }
+
 
     public void thirdThreeshold() {
         slidesState = SlidesState.THIRD_THREESHOLD;
@@ -117,9 +123,16 @@ public class Slides {
         slidesState = SlidesState.IDLE;
     }
 
+    public double getLenght() {
+        return sensors.getSlidePos() * ticksToInches;
+    }
+
+    public double getVelocity() {
+        return sensors.getSlideVelocity() * ticksToInches;
+    }
     public void AutoUpdate() { // no feedforward
-        lenght = sensors.getSlidePos()* ticksToInches;
-        vel = sensors.getSlideVelocity() * ticksToInches;
+        lenght = getLength();
+        vel = getVelocity();
         if (abs(lenght - targetLength) < 0.5) {
             slidesState = SlidesState.IDLE;
         }
@@ -127,6 +140,28 @@ public class Slides {
         slideMotor.setTargetPower(power);
     }
 
+    public void setTargetPosition(double position) {
+        targetPosition = position;
+        this.pid.target = targetPosition;
+    }
+    private class TargetPosition implements Action {
+
+        double position;
+        public TargetPosition(double position) {
+            this.position = position;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            if(getTargetPosition() != position){
+                 setTargetPosition(position);
+            }
+            return false;
+        }
+    }
+
+    public double getTargetPosition() {
+        return targetPosition;
+    }
 /*
     public void feedforward() {
         double error = targetLength - lenght;
@@ -178,5 +213,23 @@ public class Slides {
 
     public double getLength() {
         return lenght;
+    }
+
+
+    private class changeSlideState implements Action {
+
+        SlidesState state;
+
+        public changeSlideState(SlidesState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            slidesState = state;
+            return false;
+        }
+    }
+    public Action changeState(SlidesState state) {
+        return new changeSlideState(state);
     }
 }
