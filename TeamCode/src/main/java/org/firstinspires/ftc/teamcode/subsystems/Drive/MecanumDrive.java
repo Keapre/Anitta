@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.rr;
+package org.firstinspires.ftc.teamcode.subsystems.Drive;
 import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.canvas.Canvas;
@@ -43,6 +43,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.rr.Drawing;
+import org.firstinspires.ftc.teamcode.rr.Localizer;
+import org.firstinspires.ftc.teamcode.rr.TwoDeadWheelLocalizer;
 import org.firstinspires.ftc.teamcode.rr.messages.DriveCommandMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.MecanumLocalizerInputsMessage;
@@ -285,6 +288,9 @@ public final class MecanumDrive {
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
 
+    public void setPosition(Pose2d pose) {
+        this.pose = pose;
+    }
     public void setDrivePowers(PoseVelocity2d powers) {
         MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
                 PoseVelocity2dDual.constant(powers, 1));

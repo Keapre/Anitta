@@ -1,14 +1,17 @@
 package org.firstinspires.ftc.teamcode.opmode.auto.trajectories;
 
 import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Trajectory;
 import com.acmerobotics.roadrunner.Vector2d;
 
-import org.firstinspires.ftc.teamcode.rr.MecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystems.Drive.MecanumDrive;
 
 import java.util.ArrayList;
 
 public class RedBackBoard {
+    public static Pose2d start = new Pose2d(11.5,-56.5,Math.toRadians(90));
+
     public ArrayList<Vector2d> redBackBoardPreloadPos;
     public ArrayList<Vector2d> yellowPixelPos;
 
