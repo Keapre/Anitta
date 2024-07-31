@@ -49,7 +49,6 @@ public class Intake {
 
     public long reverseTimeStart = 0;
 
-
     public TiltPos tiltPos;
     public CapacPos capacPos;
     Robot2 robot2;
@@ -196,8 +195,8 @@ public class Intake {
         return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
     }
 
-    public Action reverseMotor() {
-        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[1]);
+    public Action reverseMotor(double t) {
+        return new reverseForTime(t);
     }
 
     public Action offMotor() {
@@ -245,7 +244,7 @@ public class Intake {
         public Action intakeCount(boolean fast) {
             return new SequentialAction(
                     new IntakeCount(fast),
-                    reverseMotor()
+                    reverseMotor(300)
             );
         }
         @Override
@@ -314,8 +313,8 @@ public class Intake {
         private double finishTime = 0;
         private boolean first = true;
 
-        public reverseForTime() {
-            finishTime = System.currentTimeMillis() + 1000;
+        public reverseForTime(double t) {
+            finishTime = System.currentTimeMillis() + t;
         }
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {

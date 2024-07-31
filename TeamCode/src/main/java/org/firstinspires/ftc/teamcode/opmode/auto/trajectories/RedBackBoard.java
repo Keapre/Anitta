@@ -15,8 +15,9 @@ public class RedBackBoard {
     public ArrayList<Vector2d> redBackBoardPreloadPos;
     public ArrayList<Vector2d> yellowPixelPos;
 
-    public ArrayList<Double> headingPreload = new ArrayList<>();
-    public ArrayList<Double> headingPixel = new ArrayList<>();
+    public ArrayList<Double> fromBackboardtoStack = new ArrayList<>();
+    public ArrayList<Double> fromStacktoBoardPos = new ArrayList<>();
+
     Trajectory trajectorToRedBackBoardPreload;
     Trajectory trajectorToYellowPixel;
     Trajectory trajectorToParking;
@@ -35,11 +36,6 @@ public class RedBackBoard {
         yellowPixelPos.add(new Vector2d(48,-29));
         yellowPixelPos.add(new Vector2d(48,-38));
         yellowPixelPos.add(new Vector2d(48,-44));
-        headingPreload.add(Math.toRadians(90));
-        headingPreload.add(Math.toRadians(180));
-        headingPreload.add(Math.toRadians(270));
-
-        headingPixel.add(Math.toRadians(-90));
     }
 
 

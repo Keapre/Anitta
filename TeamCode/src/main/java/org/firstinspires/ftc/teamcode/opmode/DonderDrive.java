@@ -106,6 +106,7 @@ public class DonderDrive extends LinearOpMode {
             }
         }
         if(pixelCount == 2 || (pixelCount == 1 && robot.drivetrain.isBusy())) { // maybe 1 pixel works?
+            g1.rumble(500);
             robot.intake.reverseForTime(700);
             robot.intake.capacPos = Intake.CapacPos.UP;
         }
