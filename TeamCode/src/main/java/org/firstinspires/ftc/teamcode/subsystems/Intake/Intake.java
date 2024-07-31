@@ -152,6 +152,8 @@ public class Intake {
                 break;
         }
     }
+
+
     public void reverseForTime(double time) {
         this.timeReverse = time;
         reverseTimeStart = System.currentTimeMillis();
@@ -201,14 +203,17 @@ public class Intake {
     }
 
     public Action capacDeschis() {
+        capacPos = CapacPos.UP;
         return new ActionUtil.ServoPositionAction(capac,capacPositions[0]);
     }
 
     public Action capacInchis() {
+        capacPos = CapacPos.DOWN;
         return new ActionUtil.ServoPositionAction(capac,capacPositions[1]);
     }
 
     public void intakeReverseInstant() {
+
         intakeMotor.motor[0].setPower(motorSpeed[1]);
     }
 
@@ -302,4 +307,26 @@ public class Intake {
         return new changeIntakeMotorState(state);
     }
 
+    private class reverseForTime implements Action {
+
+        private double finishTime = 0;
+        private boolean first = true;
+
+        public reverseForTime() {
+            finishTime = System.currentTimeMillis() + 1000;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            if(first) {
+                intakeMotor.motor[0].setPower(motorSpeed[1]);
+                first = false;
+            }
+
+            if(System.currentTimeMillis() >= finishTime) {
+                intakeForceOff();
+                return false;
+            }
+            return true;
+        }
+    }
 }
