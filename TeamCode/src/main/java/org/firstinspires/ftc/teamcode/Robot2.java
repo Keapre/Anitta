@@ -63,6 +63,7 @@ public class Robot2 {
         slides.update();
         extendo.update();
         outtake.update();
+        drivetrain.updatePoseEstimate();
         hardwareQueue.update();
     }
 

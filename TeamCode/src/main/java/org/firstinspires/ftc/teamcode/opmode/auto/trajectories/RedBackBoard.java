@@ -55,4 +55,9 @@ public class RedBackBoard {
                 .strafeToLinearHeading(yellowPixelPos.get(Case), headingPixel.get(0))
                 .build();
     }
+    public Action getParking(MecanumDrive drive) {
+        return drive.actionBuilder(drive.pose)
+                .strafeTo(parkingPose)
+                .build();
+    }
 }
