@@ -5,7 +5,9 @@ public class EricPid {
     public double kI;
     public double kD;
 
+    double integralSumLimit = 0;
     public double target;
+    public double lastTarget;
 
     double error= 0;
     double integral = 0;
@@ -19,6 +21,7 @@ public class EricPid {
         this.kP = kP;
         this.kI = kI;
         this.kD = kD;
+        integralSumLimit = 0.25 / kI;
     }
 
     public void setTarget(double target){
@@ -26,6 +29,9 @@ public class EricPid {
     }
 
     public double update(double currentPos) {
+        if(lastTarget!=target) {
+            integral = 0;
+        }
         error = target - currentPos;
 
         if(counter == 0) {
@@ -40,10 +46,16 @@ public class EricPid {
         double proportional = error * kP;
         integral += error * kI * loopTime;
         double derivative = (error - lastError) * kD / loopTime;
-
+        if (integral > integralSumLimit) {
+            integral = integralSumLimit;
+        }
+        if (integral < -integralSumLimit) {
+            integral = -integralSumLimit;
+        }
         lastError = error;
         counter++;
 
+        lastTarget = target;
         return proportional + integral + derivative;
     }
 

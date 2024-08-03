@@ -45,6 +45,7 @@ public class Intake {
         IDLE
     }
     final PriorityServo tilt;
+    public IntakeUpdate Update;
     public double timeReverse = 0;
 
     public long reverseTimeStart = 0;
@@ -100,6 +101,7 @@ public class Intake {
         hardwareQueue.addDevice(tilt);
         hardwareQueue.addDevice(capac);
         hardwareQueue.addDevice(intakeMotor);
+        Update = new IntakeUpdate(robot2);
     }
 
 

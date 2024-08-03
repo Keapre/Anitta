@@ -58,7 +58,7 @@ public class Robot2 {
         updateSubsystems();
     }
     public void updateSubsystems() {
-        intake.update();
+        intake.Update.start();
         plane.update();
         slides.update();
         extendo.update();

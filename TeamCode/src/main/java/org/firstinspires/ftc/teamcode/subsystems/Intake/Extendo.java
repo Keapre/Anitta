@@ -76,7 +76,7 @@ public class Extendo {
         eMotor.setPower(0);
         eMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         eMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         targetPosition = 0;
 
         eMotor.setPower(0);
