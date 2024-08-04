@@ -79,16 +79,16 @@ public class Sensors {
 //                )
 //        );
 //        imu.resetYaw();
-        expansionHub = hardwareMap.get(LynxModule.class, "Expansion Hub");
-        expansionHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
-
+//        expansionHub = hardwareMap.get(LynxModule.class, "Expansion Hub");
+//        expansionHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+//
 
         voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
     }
 
     public void update() {
         updateControlHub();
-        expansionHubUpdate();
+        //expansionHubUpdate();
         updateTelemetry();
     }
 
@@ -99,6 +99,7 @@ public class Sensors {
         huskyJustUpdated = false;
         long currTime = System.currentTimeMillis();
 
+        int px = pixelCounter();
 //        if (useIMU && currTime - imuLastUpdateTime >= imuUpdateTime) {
 //            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 //            imuHeading = orientation.getYaw(AngleUnit.RADIANS);

@@ -19,7 +19,7 @@ public class Robot {
         hardwareQueue = new HardwareQueue();
 
         drivetrain = new MecanumDrive(hardwareMap,new Pose2d(0,0,0),hardwareQueue);
-        wolfPackDrive = new WolfPackDrive(drivetrain);
+
     }
 
     public void update() {

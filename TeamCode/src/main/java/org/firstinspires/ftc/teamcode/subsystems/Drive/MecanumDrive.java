@@ -40,6 +40,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -51,6 +52,7 @@ import org.firstinspires.ftc.teamcode.rr.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.MecanumLocalizerInputsMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.PoseMessage;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
+import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 
@@ -250,8 +252,8 @@ public final class MecanumDrive {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
         CrightFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightFront"));
-        CrightBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightRear"));
-        CleftBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftRear"));
+        CrightBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightBack"));
+        CleftBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftBack"));
         CleftFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftFront"));
         // TODO: make sure your config has motors with these names (or change them)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
@@ -410,6 +412,16 @@ public final class MecanumDrive {
         }
     }
 
+    public void driveFromControler(GamePadController g1) {
+        double input_x = Math.pow(-g1.left_stick_y, 3);
+        double input_y = Math.pow(-g1.left_stick_x, 3);
+        Vector2d input = new Vector2d(input_x, input_y);
+
+        double input_turn = Math.pow(-g1.right_stick_x, 3);
+        input_turn = Range.clip(input_turn, -1, 1);
+
+        setDrivePowers(new PoseVelocity2d(input,input_turn));
+    }
     public final class TurnAction implements Action {
         private final TimeTurn turn;
 
