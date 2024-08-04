@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
+import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -41,8 +42,13 @@ public class Slides {
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
     int indexManualPowers = 0;
 
+    public static double idlePower = 0.01;
+    public static double extendPower = 0.8;
+    public static double retractPower = 0.8;
     public static double kP = 0, kI = 0, kD = 0;
     public static double kgSlides = 0;
+
+    public static double ExtendoPower = 0;
 
     double[] distancesThreeshold = new double[]{0, 0, 0}; //TODO: TUNE
     public static double lenght = 0;
@@ -109,19 +115,16 @@ public class Slides {
         setTargetLength(distancesThreeshold[2]);
     }
 
-    public void manual_extend() {
-        slidesState = SlidesState.MANUAL;
-        indexManualPowers = 0;
-    }
-
-    public void manual_retract() {
-        slidesState = SlidesState.MANUAL;
-        indexManualPowers = 1;
-    }
-
-    public void manual_IDLE() {
-        indexManualPowers = 2;
-        slidesState = SlidesState.IDLE;
+    public void updateManualPower(GamePadController g1) {
+        if(g1.rightBumper()) {
+            ExtendoPower = extendPower;
+            return;
+        }
+        if(g1.leftBumper()) {
+            ExtendoPower = retractPower;
+            return;
+        }
+        ExtendoPower = idlePower;
     }
 
     public double getLenght() {
@@ -183,7 +186,7 @@ public class Slides {
         vel = sensors.getSlideVelocity()     * ticksToInches;
         switch (slidesState) {
             case MANUAL:
-                slideMotor.setTargetPower(manualPowers[indexManualPowers]);
+                slideMotor.setTargetPower(ExtendoPower);
                 break;
             case IDLE:
                 slideMotor.setTargetPower(0);
