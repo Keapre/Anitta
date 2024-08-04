@@ -7,6 +7,7 @@ import android.hardware.Sensor;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot2;
@@ -32,7 +33,7 @@ public class Extendo {
     Sensors sensors;
     PriorityMotor extendoMotor;
 
-    double[] manualPowers = new double[]{0.7, -0.7, 0.0};
+    public static double extendoPower = 0.0;
     int indexManualPowers = 0;
 
     public static double kP = 0, kI = 0, kD = 0;
@@ -54,11 +55,14 @@ public class Extendo {
     public static double targetPosition = 0;
     public ExtendoState extendoState = ExtendoState.IDLE;
 
-    public Extendo(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors,Robot2 robot) {
+    public Extendo(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot2 robot) {
         this.sensors = sensors;
         this.extendoState = ExtendoState.IDLE;
         if (Globals.RUNMODE == Perioada.AUTO) {
             resetSlidesEncoder();
+        }
+        if(Globals.RUNMODE == Perioada.TELEOP) {
+            extendoState = ExtendoState.MANUAL;
         }
         eMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "extendo"));
 
@@ -75,26 +79,17 @@ public class Extendo {
     void resetSlidesEncoder() {
         eMotor.setPower(0);
         eMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        eMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        eMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        eMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         targetPosition = 0;
 
         eMotor.setPower(0);
     }
 
-    public void manual_extend() {
-        extendoState = ExtendoState.MANUAL;
-        indexManualPowers = 0;
-    }
-
-    public void manual_retract() {
-        extendoState = ExtendoState.MANUAL;
-        indexManualPowers = 1;
-    }
-
-    public void manual_IDLE() {
-        indexManualPowers = 2;
-        extendoState = ExtendoState.IDLE;
+    public void updatePower(double Power) {
+        extendoPower = Power;
+        if(extendoPower == 0) extendoPower = 0.01;
     }
 
     public void AutoUpdate() {
@@ -113,10 +108,10 @@ public class Extendo {
         vel = sensors.getExtendoVelocity() * ticksToInches;
         switch (extendoState) {
             case MANUAL:
-                extendoMotor.setTargetPower(manualPowers[indexManualPowers]);
+                extendoMotor.setTargetPower(extendoPower);
                 break;
             case IDLE:
-                extendoMotor.setTargetPower(0);
+                extendoMotor.setTargetPower(0.01);
                 break;
             case FIRST_THRESHOLD:
                 setTargetLength(distancesThreeshold[0]);

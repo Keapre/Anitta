@@ -2,24 +2,15 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import android.util.Log;
 
-import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.TelemetryUtil;
-
-import javax.microedition.khronos.opengles.GL;
 
 public class Sensors {
     private LynxModule controlHub, expansionHub;
@@ -32,12 +23,12 @@ public class Sensors {
     HardwareQueue hardwareQueue;
     private double imuUpdateRate = 1500;
 
-    HuskyLens huskyLens;
-    HuskyLens.Block[] huskyLensBlocks;
+//    HuskyLens huskyLens;
+//    HuskyLens.Block[] huskyLensBlocks;
 
     private long lastImuUpdateTime = System.currentTimeMillis();
     private IMU imu;
-    Robot robot;
+
     private long imuLastUpdateTime = System.currentTimeMillis();
     private double imuHeading = 0.0;
     public boolean useIMU;
@@ -46,8 +37,8 @@ public class Sensors {
     HardwareMap hardwareMap;
     public double extendoEncoder, extendoVelocity;
     public double slideEncoder, slideVelocity;
-    DistanceSensor intakePixelLeft;
-    DistanceSensor intakePixelRight;
+    DigitalChannel intakePixelLeft;
+    DigitalChannel intakePixelRight;
     private double voltage;
 
     public static double updateTimeVoltage = 5000;
@@ -66,10 +57,10 @@ public class Sensors {
 
     public Sensors(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
         this.hardwareMap = hardwareMap;
-        intakePixelLeft = hardwareMap.get(DistanceSensor.class, "pixelLeft");
-        intakePixelRight = hardwareMap.get(DistanceSensor.class, "pixelRight");
+        intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
+        intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
 
-        this.robot = robot;
+        //this.robot = robot;
         initSensors(hardwareMap);
     }
 
@@ -77,8 +68,8 @@ public class Sensors {
         controlHub = hardwareMap.get(LynxModule.class, "Control Hub");
         controlHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
 
-        huskyLens = hardwareMap.get(HuskyLens.class, "huskyLens");
-        huskyLens.selectAlgorithm(HuskyLens.Algorithm.COLOR_RECOGNITION);
+//        huskyLens = hardwareMap.get(HuskyLens.class, "huskyLens");
+//        huskyLens.selectAlgorithm(HuskyLens.Algorithm.COLOR_RECOGNITION);
         //imu = hardwareMap.get(IMU.class, "imu");
 //        imu.initialize(
 //                new IMU.Parameters(new RevHubOrientationOnRobot(
@@ -115,22 +106,22 @@ public class Sensors {
 //            imuJustUpdated = true;
 //        }
 
-        if(huskyLensEnabled && currTime - lastHuskyLensUpdatedTime >= huskyUpdateTime) {
+/*        if(huskyLensEnabled && currTime - lastHuskyLensUpdatedTime >= huskyUpdateTime) {
             huskyLensBlocks = huskyLens.blocks();
             lastHuskyLensUpdatedTime = currTime;
             huskyJustUpdated = true;
-        }
+        }*/
 
         if (currTime- lastVoltageUpdatedTime > updateTimeVoltage) {
             voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
             lastVoltageUpdatedTime = currTime;
         }
         timeTillNextIMUUpdate = imuUpdateTime - (currTime - imuLastUpdateTime);
-        extendoEncoder = ((PriorityMotor) hardwareQueue.getDevice("extendo")).motor[0].getCurrentPosition(); //TODO : daca encoderu e reversed
+/*        extendoEncoder = ((PriorityMotor) hardwareQueue.getDevice("extendo")).motor[0].getCurrentPosition(); //TODO : daca encoderu e reversed
         extendoVelocity = ((PriorityMotor) hardwareQueue.getDevice("extendo")).motor[0].getVelocity(); //SI AICI LA FEL
 
         slideEncoder = ((PriorityMotor) hardwareQueue.getDevice("slides1")).motor[0].getCurrentPosition();
-        slideVelocity = ((PriorityMotor) hardwareQueue.getDevice("slides1")).motor[0].getVelocity();
+        slideVelocity = ((PriorityMotor) hardwareQueue.getDevice("slides1")).motor[0].getVelocity();*/
     }
 
     private void expansionHubUpdate() {
@@ -148,12 +139,8 @@ public class Sensors {
     }
     public int pixelCounter() {
         int cnt = 0;
-        if (getLeftDistance() <= pixelThreeshold) {
-            cnt++;
-        }
-        if (getRightDistance() <= pixelThreeshold) {
-            cnt++;
-        }
+        if(!getLeftDistance()) cnt++;
+        if(!getRightDistance()) cnt++;
         Globals.NUM_PIXELS = cnt;
         return cnt;
     }
@@ -170,12 +157,12 @@ public class Sensors {
         return imuHeading;
     }
 
-    public double getLeftDistance() {
-        return intakePixelLeft.getDistance(DistanceUnit.MM);
+    public boolean getLeftDistance() {
+        return intakePixelLeft.getState();
     }
 
-    public double getRightDistance() {
-        return intakePixelRight.getDistance(DistanceUnit.MM);
+    public boolean getRightDistance() {
+        return intakePixelRight.getState();
     }
     public double getExtendoPos() {
         return extendoEncoder;
@@ -184,9 +171,9 @@ public class Sensors {
         return extendoVelocity;
     }
 
-    public HuskyLens.Block[] getHuskyLensBlocks() {
-        return huskyLensBlocks;
-    }
+//    public HuskyLens.Block[] getHuskyLensBlocks() {
+//        return huskyLensBlocks;
+//    }
 
     public double getNormalizedIMUHeading() {
         return getImuHeading() - (numRotations*(2*Math.PI));
