@@ -34,7 +34,15 @@ public class Intake2 {
         STACK2,
         STACK3,
         STACK4,
-        STACK5
+        STACK5;
+
+        public TiltState previous() {
+            return values()[ordinal()-1];
+        }
+
+        public TiltState next() {
+            return values()[ordinal()+1];
+        }
     }
 
     public enum CapacPos {
@@ -49,6 +57,7 @@ public class Intake2 {
         REVERSE_FOR_TIME,
         IDLE
     }
+
     final PriorityServo tilt;
     public static boolean findPixels = false;
     public IntakeUpdate Update;
@@ -66,9 +75,9 @@ public class Intake2 {
     public static int indexTilt = 0;
     public double currentTilt = 0,lastTilt = 0;
     public static double[] tiltPositions = new double[]{0.55, 0.56,0.58,0.6,0.61, 0.7};
-    public static double[] capacPositions = new double[]{0.7, 0}; // 0 - open ,1 - closed
+    public static double[] capacPositions = new double[]{0.8, 0}; // 0 - open ,1 - closed
 
-    public static double[] motorSpeed = new double[]{1, -0.87,-0.3, 0.0};
+    public static double[] motorSpeed = new double[]{1, -1,-0.3, 0.0};
 
     final PriorityServo capac;
     public boolean started = false;

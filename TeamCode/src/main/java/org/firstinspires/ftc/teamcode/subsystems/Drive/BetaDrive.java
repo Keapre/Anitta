@@ -11,6 +11,10 @@ import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 
 public class BetaDrive {
+    private boolean slow_mode = false;
+    private static double turnSpeed = 0.5;
+    private static double slow_turnSpeed = 0.3;
+    private static double slow_driving = 0.6;
 
     CachingDcMotorEx frontLeftMotor,backLeftMotor,frontRightMotor,backRightMotor;
     PriorityMotor PfrontLeftMotor,PbackLeftMotor,PfrontRightMotor,PbackRightMotor;
@@ -51,13 +55,23 @@ public class BetaDrive {
     }
 
     public void driveGamepad(GamePadController g1) {
-        double y = -g1.left_stick_y; // Remember, Y stick value is reversed
-        double x = g1.left_stick_x * 1.1; // Counteract imperfect strafing
+
+        if(g1.leftStickButtonOnce()){
+            slow_mode = !slow_mode;
+        }
+
+
+        double y = -g1.left_stick_y;
+        double x = g1.left_stick_x * 1.1;
         double rx = g1.right_stick_x;
 
-        // Denominator is the largest motor power (absolute value) or 1
-        // This ensures all the powers maintain the same ratio,
-        // but only if at least one is out of the range [-1, 1]
+        if(slow_mode) {
+            y*=slow_driving;
+            x*=slow_driving;
+            rx*=slow_turnSpeed;
+        }else {
+            rx*=turnSpeed;
+        }
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
         double frontLeftPower = (y + x + rx) / denominator;
         double backLeftPower = (y - x + rx) / denominator;

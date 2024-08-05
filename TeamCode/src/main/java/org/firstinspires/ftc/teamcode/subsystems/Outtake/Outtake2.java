@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.Robot3;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
@@ -21,7 +22,7 @@ import org.firstinspires.ftc.teamcode.util.Utils;
 
 
 @Config
-public class    Outtake {
+public class Outtake2 {
 
     public enum FourBarState {
         IDLE,
@@ -42,6 +43,7 @@ public class    Outtake {
         RIGHT_OPEN
     }
 
+
     boolean busy = false;
 
     public static double releaseTime = 250;
@@ -59,7 +61,7 @@ public class    Outtake {
     public  boolean dropRightPixel = false;
     public final PriorityServo servoArmLeft, servoArmRight;
 
-    Robot2 robot;
+    Robot3 robot;
     public double defaultRotatePos = 0.56;
     public double currentRotatePos = defaultRotatePos;
 
@@ -82,7 +84,7 @@ public class    Outtake {
     public double deltaRotateValue = 0.1;
 
 
-    public Outtake(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Robot2 robot) {
+    public Outtake2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot3 robot) {
         clawLeft = new PriorityServo(
                 new CachingServo(hardwareMap.get(Servo.class, "clawLeft")),
                 "clawLeft", 0.2, PriorityServo.ServoType.AXON_MINI, clawLeftClosed, clawLeftClosed, false);
@@ -91,25 +93,26 @@ public class    Outtake {
                 "clawRight", 0.2, PriorityServo.ServoType.AXON_MINI, clawRightClosed, clawRightClosed, false);
 
         rotateServo = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "rotateServo")),
+                new CachingServo(hardwareMap.get(Servo.class, "rotateouttake")),
                 "rotateServo", 0.3, PriorityServo.ServoType.AXON_MINI, defaultRotatePos, defaultRotatePos, false);
 
         outtakebar = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "outtakebar")),
+                new CachingServo(hardwareMap.get(Servo.class, "tiltouttake")),
                 "outtakebar", 0.35, PriorityServo.ServoType.AXON_MINI, defaultOuttakeBarPos, defaultOuttakeBarPos, false);
 
         servoArmLeft = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "servoArmLeft")),
+                new CachingServo(hardwareMap.get(Servo.class, "leftservo")),
                 "servoArmLeft", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmLeft, defaultArmLeft, false);
 
         servoArmRight = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "servoArmRight")),
+                new CachingServo(hardwareMap.get(Servo.class, "rightservo")),
                 "servoArmRight", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmRight, defaultArmRight, false);
 
         currentState = FourBarState.TRANSFER_IDLE;
         clawState = ClawState.CLOSE;
         this.robot = robot;
         hardwareQueue.addDevice(clawLeft);
+        hardwareQueue.addDevice(clawRight);
         hardwareQueue.addDevice(rotateServo);
         hardwareQueue.addDevice(outtakebar);
         hardwareQueue.addDevice(servoArmLeft);
@@ -250,33 +253,26 @@ public class    Outtake {
                 break;
             case OUTTAKE_POSITION:
 //                robot.slides.checkForIntake();
-                clawCloseFunc();
-                setClawState(ClawState.CLOSE);
                 servoArmLeft.setPosition(scoringArmLeft);
                 servoArmRight.setPosition(scoringArmRight);
                 outtakebar.setPosition(scoringOuttakeBarPose);
-                lastImportant = FourBarState.OUTTAKE_POSITION;
-                setOuttakeState(FourBarState.IDLE);
                 break;
             case TRANSFER_IDLE:
 //                robot.slides.checkForIntake();
                 servoArmLeft.setPosition(defaultArmLeft);
                 servoArmRight.setPosition(defaultArmRight);
                 outtakebar.setPosition(defaultOuttakeBarPos);
-                lastImportant = FourBarState.TRANSFER_IDLE;
-                setClawState(ClawState.OPEN);
-                setOuttakeState(FourBarState.IDLE);
                 break;
             case INTAKE_POSITION:
-                servoArmLeft.setPosition(defaultArmLeft);
-                servoArmRight.setPosition(defaultArmRight);
-                outtakebar.setPosition(defaultOuttakeBarPos);
-                setClawState(ClawState.CLOSE);
+                servoArmLeft.setPosition(intakeArmLeft);
+                servoArmRight.setPosition(intakeArmRight);
+                outtakebar.setPosition(intakeTilt);
                 break;
         }
         switch (clawState) {
             case OPEN:
-                clawOpenFunc();
+                clawLeft.setPosition(clawLeftOpen);
+                clawRight.setPosition(clawRightOpen);
                 break;
             case CLOSE:
                 clawLeft.setPosition(clawLeftClosed);

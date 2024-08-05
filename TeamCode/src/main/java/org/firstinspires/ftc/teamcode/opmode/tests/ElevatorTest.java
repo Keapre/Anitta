@@ -24,6 +24,7 @@ public class ElevatorTest extends LinearOpMode {
     GamePadController g1;
     ElevatorState elevatorState = ElevatorState.IDLE;
 
+    public static double idlePower = 0.07;
     public static double elevatorPower = 0.8;
 
     public static double retractPower = -0.8;
@@ -36,25 +37,17 @@ public class ElevatorTest extends LinearOpMode {
         g1 = new GamePadController(gamepad1);
         waitForStart();
 
+        double power = 0;
         initiliazeMotor();
 
         while(opModeIsActive()) {
             g1.update();
-            if(g1.yOnce()) {
-                if(elevatorState == ElevatorState.IDLE) {
-                    elevatorState = ElevatorState.EXTEND;
-                } else {
-                    elevatorState = ElevatorState.IDLE;
-                }
+            power = -g1.left_trigger + g1.right_trigger;
+            if(power == 0) {
+                power = idlePower;
             }
-            if(g1.aOnce()) {
-                if(elevatorState == ElevatorState.IDLE) {
-                    elevatorState = ElevatorState.RETRACT;
-                } else {
-                    elevatorState = ElevatorState.IDLE;
-                }
-            }
-            update();
+            elevatorMotor1.setPower(power);
+            elevatorMotor2.setPower(power);
             telemetry.addData("Elevator State", elevatorState);
             telemetry.update();
         }

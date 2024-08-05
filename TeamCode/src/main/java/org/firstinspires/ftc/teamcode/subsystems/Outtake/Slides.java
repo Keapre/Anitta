@@ -174,13 +174,13 @@ public class Slides {
     }
 */
 
-    public void checkForIntake() {
-        if(robot.outtake.currentState == Outtake.FourBarState.TRANSFER_INTAKE) {
-            firstThreeshold();
-        }else if(robot.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION) {
-            secondThreeshold();
-        }
-    }
+//    public void checkForIntake() {
+//        if(robot.outtake.currentState == Outtake.FourBarState.TRANSFER_INTAKE) {
+//            firstThreeshold();
+//        }else if(robot.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION) {
+//            secondThreeshold();
+//        }
+//    }
     public void update() {
         lenght = sensors.getSlidePos()* ticksToInches; //TODO:USE the sensor class for this
         vel = sensors.getSlideVelocity()     * ticksToInches;
