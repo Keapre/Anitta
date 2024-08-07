@@ -73,7 +73,7 @@ public final class MecanumDrive {
         // TODO: fill in these values based on
         //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
         public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
+                RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
         public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
                 RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
@@ -106,6 +106,13 @@ public final class MecanumDrive {
         public double lateralVelGain = 0.0;
         public double headingVelGain = 0.0; // shared with turn
     }
+
+    private boolean slow_mode = false;
+    private static double turnSpeed = 0.5;
+    private static double slow_turnSpeed = 0.3;
+    IMU imu;
+    private static double slow_driving = 0.6;
+    private static double drivingSpeed = 0.8;
 
     public static Params PARAMS = new Params();
 
@@ -279,7 +286,7 @@ public final class MecanumDrive {
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        lazyImu = new LazyImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
+        lazyImu = new LazyImu(hardwareMap, "imu 1", new RevHubOrientationOnRobot(
                 PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
@@ -288,6 +295,38 @@ public final class MecanumDrive {
         localizer = new TwoDeadWheelLocalizer(hardwareMap, this.lazyImu.get(), PARAMS.inPerTick);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
+    }
+    public void driveFromController(GamePadController gamepad1) {
+
+        if(gamepad1.leftStickButtonOnce()){
+            slow_mode = !slow_mode;
+        }
+
+        if(gamepad1.rightStickButtonOnce()) {
+            this.lazyImu.get().resetYaw();
+        }
+
+        double input_x = Math.pow(-gamepad1.left_stick_y, 3);
+        double input_y = Math.pow(-gamepad1.left_stick_x, 3);
+
+
+        double input_turn = Math.pow(-gamepad1.right_stick_x, 3);
+
+        if(slow_mode) {
+            input_x*=slow_driving;
+            input_y*=slow_driving;
+            input_turn*=slow_turnSpeed;
+        }else {
+            input_x*=drivingSpeed;
+            input_y*=drivingSpeed;
+            input_turn*=turnSpeed;
+        }
+        Vector2d input = new Vector2d(input_x, input_y);
+        input_turn = Range.clip(input_turn, -1, 1);
+        PoseVelocity2d rel = updatePoseEstimate();
+        input = this.pose.heading.inverse().times(input); //field centric
+
+        setDrivePowers(new PoseVelocity2d(input,input_turn));
     }
 
     public void setPosition(Pose2d pose) {

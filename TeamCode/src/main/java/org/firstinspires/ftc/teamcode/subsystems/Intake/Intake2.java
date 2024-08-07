@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.subsystems.Intake;
 
 import androidx.annotation.NonNull;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.SequentialAction;
@@ -26,6 +27,7 @@ import org.firstinspires.ftc.teamcode.util.Utils;
 
 import com.qualcomm.robotcore.hardware.Servo;
 
+@Config
 public class Intake2 {
 
     public enum TiltState {
@@ -74,15 +76,15 @@ public class Intake2 {
 
     public static int indexTilt = 0;
     public double currentTilt = 0,lastTilt = 0;
-    public static double[] tiltPositions = new double[]{0.55, 0.56,0.58,0.6,0.61, 0.7};
-    public static double[] capacPositions = new double[]{0.8, 0}; // 0 - open ,1 - closed
+    public static double[] tiltPositions = new double[]{0.556, 0.56,0.58,0.6,0.61, 0.7};
+    public static double[] capacPositions = new double[]{0.72, 0}; // 0 - open ,1 - closed
 
     public static double[] motorSpeed = new double[]{1, -1,-0.3, 0.0};
 
     final PriorityServo capac;
     public boolean started = false;
 
-    final PriorityMotor intakeMotor;
+    final CachingDcMotorEx intakeMotor;
 
     public Intake2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot3 robot2) {
         findPixels = false;
@@ -104,15 +106,10 @@ public class Intake2 {
                 capacPositions[1],
                 false
         );
-        intakeMotor = new PriorityMotor(
-                new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "intakeMotor")),
-                "intakeMotor",
-                4
-        );
-        intakeMotor.setPowerForced(0);
-        intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
-        intakeMotor.motor[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intakeMotor.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intakeMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "intakeMotor"));
+        intakeMotor.setPower(0);
+        //intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         capacPos = CapacPos.DOWN;
         tiltPos = TiltState.LOW;
         intakeState = IntakeState.IDLE;
@@ -120,7 +117,6 @@ public class Intake2 {
         this.robot2 = robot2;
         hardwareQueue.addDevice(tilt);
         hardwareQueue.addDevice(capac);
-        hardwareQueue.addDevice(intakeMotor);
     }
 
     public void updateIndexTiltLow() {
@@ -145,27 +141,27 @@ public class Intake2 {
 
         switch (intakeState) {
             case FORWARD:
-                intakeMotor.setTargetPower(motorSpeed[0]);
+                intakeMotor.setPower(1);
                 break;
             case REVERSE:
-                intakeMotor.setTargetPower(motorSpeed[1]);
+                intakeMotor.setPower(-1);
                 break;
             case REVERSE_SLOW:
-                intakeMotor.setTargetPower(motorSpeed[2]);
+                intakeMotor.setPower(motorSpeed[2]);
                 break;
             case REVERSE_FOR_TIME:
                 long elapsed = System.currentTimeMillis() - reverseTimeStart;
                 if(System.currentTimeMillis() < reverseTimeStart + timeReverse) {
                     debug = true;
-                    intakeMotor.setTargetPower(motorSpeed[1]);
+                    intakeMotor.setPower(motorSpeed[1]);
                 } else {
                     debug = false;
-                    intakeMotor.setTargetPower(motorSpeed[3]);
+                    intakeMotor.setPower(motorSpeed[3]);
                     intakeState = IntakeState.IDLE;
                 }
                 break;
             case IDLE:
-                intakeMotor.setTargetPower(motorSpeed[3]);
+                intakeMotor.setPower(motorSpeed[3]);
                 break;
             default:
                 break;
@@ -196,7 +192,7 @@ public class Intake2 {
         intakeState = IntakeState.FORWARD;
     }
     public void intakeForceOff() {
-        intakeMotor.setPowerForced(0);
+        intakeMotor.setPower(0);
         intakeState = IntakeState.IDLE;
     }
     public double reverseTimeStarting = 0;
@@ -215,17 +211,17 @@ public class Intake2 {
         return new ActionUtil.ServoPositionAction(tilt,tiltPositions[setPoint]);
     }
 
-    public Action intakeMotor() {
-        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
-    }
+//    public Action intakeMotor() {
+//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
+//    }
 
     public Action reverseMotor(double t) {
         return new reverseForTime(t);
     }
 
-    public Action offMotor() {
-        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
-    }
+//    public Action offMotor() {
+//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
+//    }
 
     public Action capacDeschis() {
         capacPos = CapacPos.UP;
@@ -239,7 +235,7 @@ public class Intake2 {
 
     public void intakeReverseInstant() {
 
-        intakeMotor.motor[0].setPower(motorSpeed[1]);
+        intakeMotor.setPower(motorSpeed[1]);
     }
 
     public void LowTilt() {
@@ -296,7 +292,7 @@ public class Intake2 {
             }
 
             if(jammed) {
-                if(!intakeMotor.motor[0].isOverCurrent()) {
+                if(!intakeMotor.isOverCurrent()) {
                     this.jammed = false;
                     return System.currentTimeMillis() < finalTime;
                 }
@@ -305,7 +301,7 @@ public class Intake2 {
                     return System.currentTimeMillis() < finalTime;
                 }
             }
-            if (intakeMotor.motor[0].isOverCurrent()) {
+            if (intakeMotor.isOverCurrent()) {
                 this.jammed = true;
                 return System.currentTimeMillis() < finalTime;
             }
@@ -361,7 +357,7 @@ public class Intake2 {
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
             if(first) {
-                intakeMotor.motor[0].setPower(motorSpeed[1]);
+                intakeMotor.setPower(motorSpeed[1]);
                 first = false;
             }
 

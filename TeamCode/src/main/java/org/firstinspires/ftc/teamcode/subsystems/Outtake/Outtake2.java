@@ -29,6 +29,7 @@ public class Outtake2 {
         CHANGING_ROTATE,
         TRANSFER_IDLE,
         INTAKE_POSITION,
+        PRE_INTAKE,
         OUTTAKE_POSITION,
     }
 
@@ -65,17 +66,20 @@ public class Outtake2 {
     public double defaultRotatePos = 0.56;
     public double currentRotatePos = defaultRotatePos;
 
-    public double defaultOuttakeBarPos = 0.24;
-    public double defaultArmLeft = 0.25;
-    public double defaultArmRight = 0.75;
-    public double intakeArmRight = 0.85;
-    public double intakeArmLeft = 0.15;
-    public double intakeTilt = 0.24;
+    public static double defaultOuttakeBarPos = 0.24;
+    public static double defaultArmLeft = 0.3;
+    public static double defaultArmRight = 0.7;
+    public static double intakeArmRight = 0.85;
+    public static double intakeArmLeft = 0.15;
+    public static double intakeTilt = 0.16;
 
+    public static double preIntakeArmLeft = 0.19;
+    public static double prePreIntakeArmRight = 0.81;
+    public static double preIntakeTilt = 0.20;
     public double clawLeftOpen = 0.01;
     public double clawRightOpen = 0.02;
-    public double clawLeftClosed = 0.22;
-    public double clawRightClosed = 0.16;
+    public static double clawLeftClosed = 0.22;
+    public static double clawRightClosed = 0.21;
 
 
     public double scoringOuttakeBarPose = 0.92;
@@ -93,19 +97,19 @@ public class Outtake2 {
                 "clawRight", 0.2, PriorityServo.ServoType.AXON_MINI, clawRightClosed, clawRightClosed, false);
 
         rotateServo = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "rotateouttake")),
+                new CachingServo(hardwareMap.get(Servo.class, "rotateOuttake")),
                 "rotateServo", 0.3, PriorityServo.ServoType.AXON_MINI, defaultRotatePos, defaultRotatePos, false);
 
         outtakebar = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "tiltouttake")),
+                new CachingServo(hardwareMap.get(Servo.class, "tiltOuttake")),
                 "outtakebar", 0.35, PriorityServo.ServoType.AXON_MINI, defaultOuttakeBarPos, defaultOuttakeBarPos, false);
 
         servoArmLeft = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "leftservo")),
+                new CachingServo(hardwareMap.get(Servo.class, "leftServo")),
                 "servoArmLeft", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmLeft, defaultArmLeft, false);
 
         servoArmRight = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "rightservo")),
+                new CachingServo(hardwareMap.get(Servo.class, "rightServo")),
                 "servoArmRight", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmRight, defaultArmRight, false);
 
         currentState = FourBarState.TRANSFER_IDLE;
@@ -264,9 +268,10 @@ public class Outtake2 {
                 outtakebar.setPosition(defaultOuttakeBarPos);
                 break;
             case INTAKE_POSITION:
+                outtakebar.setPosition(intakeTilt);
                 servoArmLeft.setPosition(intakeArmLeft);
                 servoArmRight.setPosition(intakeArmRight);
-                outtakebar.setPosition(intakeTilt);
+
                 break;
         }
         switch (clawState) {

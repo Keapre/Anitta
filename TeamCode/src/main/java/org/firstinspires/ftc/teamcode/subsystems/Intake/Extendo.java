@@ -58,7 +58,7 @@ public class Extendo {
     public Extendo(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot2 robot) {
         this.sensors = sensors;
         this.extendoState = ExtendoState.IDLE;
-        if (Globals.RUNMODE == Perioada.AUTO) {
+        if (Globals.RUNMODE == Perioada.AUTO || Globals.RUNMODE == Perioada.TELEOP){
             resetSlidesEncoder();
         }
         if(Globals.RUNMODE == Perioada.TELEOP) {
@@ -78,9 +78,9 @@ public class Extendo {
 
     void resetSlidesEncoder() {
         eMotor.setPower(0);
-        eMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        eMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-        eMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+//        eMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+//        eMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        //eMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         targetPosition = 0;
 
@@ -111,7 +111,7 @@ public class Extendo {
                 extendoMotor.setTargetPower(extendoPower);
                 break;
             case IDLE:
-                extendoMotor.setTargetPower(0.01);
+                extendoMotor.setTargetPower(0);
                 break;
             case FIRST_THRESHOLD:
                 setTargetLength(distancesThreeshold[0]);

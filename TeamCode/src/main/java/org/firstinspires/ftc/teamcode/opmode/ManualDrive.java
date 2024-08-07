@@ -22,7 +22,7 @@ public class ManualDrive extends LinearOpMode {
         // See the note about this earlier on this page.
         backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
         waitForStart();
 
         if (isStopRequested()) return;

@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake2;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake2;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
+import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides2;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
@@ -23,7 +24,7 @@ import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 public class Robot3 {
     HardwareQueue hardwareQueue;
 
-//    public final MecanumDrive drivetrain;
+    public final MecanumDrive drive;
 //    public final WolfPackDrive wolfPackDrive;
 
     public final Sensors sensors;
@@ -33,7 +34,7 @@ public class Robot3 {
 //    public final Plane plane;
     //public final BetaDrive drive;
 
-//    public final Slides slides;
+    public final Slides2 slides;
 
     public final Extendo2 extendo;
 
@@ -42,7 +43,7 @@ public class Robot3 {
     public Robot3(HardwareMap hardwareMap) {
         hardwareQueue = new HardwareQueue();
 
-        //drive = new BetaDrive(hardwareMap,hardwareQueue);
+        drive = new MecanumDrive(hardwareMap,new Pose2d(0,0,0),hardwareQueue);
 
         sensors = new Sensors(hardwareMap, hardwareQueue);
 
@@ -52,7 +53,7 @@ public class Robot3 {
 
         extendo = new Extendo2(hardwareMap, hardwareQueue,sensors,this);
 
-
+        slides = new Slides2(hardwareMap,hardwareQueue,sensors,this);
 
     }
 
@@ -63,7 +64,7 @@ public class Robot3 {
     public void updateSubsystems() {
         intake.update();
         // plane.update();
-        //slides.update();
+        slides.update();
         extendo.update();
         outtake.update();
         //drivetrain.updatePoseEstimate();

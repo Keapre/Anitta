@@ -25,9 +25,9 @@ public class ElevatorTest extends LinearOpMode {
     ElevatorState elevatorState = ElevatorState.IDLE;
 
     public static double idlePower = 0.07;
-    public static double elevatorPower = 0.8;
+    public static double elevatorPower = 1;
 
-    public static double retractPower = -0.8;
+    public static double retractPower = -1;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -42,12 +42,22 @@ public class ElevatorTest extends LinearOpMode {
 
         while(opModeIsActive()) {
             g1.update();
-            power = -g1.left_trigger + g1.right_trigger;
-            if(power == 0) {
-                power = idlePower;
+            if(g1.xOnce()) {
+                if(elevatorState == ElevatorState.EXTEND) {
+                    elevatorState = ElevatorState.IDLE;
+                }else {
+                    elevatorState = ElevatorState.EXTEND;
+                }
             }
-            elevatorMotor1.setPower(power);
-            elevatorMotor2.setPower(power);
+
+            if(g1.yOnce()) {
+                if(elevatorState == ElevatorState.RETRACT) {
+                    elevatorState = ElevatorState.IDLE;
+                }else {
+                    elevatorState = ElevatorState.RETRACT;
+                }
+            }
+            update();
             telemetry.addData("Elevator State", elevatorState);
             telemetry.update();
         }
