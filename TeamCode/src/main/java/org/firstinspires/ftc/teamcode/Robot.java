@@ -18,7 +18,7 @@ public class Robot {
     public Robot(HardwareMap hardwareMap) {
         hardwareQueue = new HardwareQueue();
 
-        drivetrain = new MecanumDrive(hardwareMap,new Pose2d(0,0,0),hardwareQueue);
+        drivetrain = new MecanumDrive(hardwareMap,new Pose2d(0,0,0));
 
     }
 

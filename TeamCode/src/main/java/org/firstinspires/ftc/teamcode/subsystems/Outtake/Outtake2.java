@@ -66,6 +66,8 @@ public class Outtake2 {
     public double defaultRotatePos = 0.56;
     public double currentRotatePos = defaultRotatePos;
 
+    public static double[] rotateValues = new double[]{0.85, 0.7, 0.56, 0.41,0.26};
+    public static int rotateIndex = 2;
     public static double defaultOuttakeBarPos = 0.14;
     public static double defaultArmLeft = 0.3;
     public static double defaultArmRight = 0.7;
@@ -82,9 +84,9 @@ public class Outtake2 {
     public static double clawRightClosed = 0.21;
 
 
-    public double scoringOuttakeBarPose = 0.92;
-    public double scoringArmLeft = 0.55;
-    public double scoringArmRight = 0.45;
+    public static double scoringOuttakeBarPose = 0.86;
+    public static double scoringArmLeft = 0.55;
+    public static double scoringArmRight = 0.45;
     public double deltaRotateValue = 0.1;
 
     public OuttakeUpdate outtakeUpdate;
@@ -101,7 +103,7 @@ public class Outtake2 {
         servoArmRight = new CachingServo(hardwareMap.get(Servo.class, "rightServo"));
 
         currentState = FourBarState.TRANSFER_IDLE;
-        clawState = ClawState.CLOSE;
+        clawState = ClawState.OPEN;
         this.robot = robot;
     }
 
@@ -123,14 +125,14 @@ public class Outtake2 {
     }
     public void addRotate() {
 
-        currentRotatePos += deltaRotateValue;
-        Utils.minMaxClip(currentRotatePos, 0, 1);
+        rotateIndex++;
+        Utils.minMaxClip(rotateIndex, 0, 4);
 
     }
 
     public void subRotate() {
-        currentRotatePos -= deltaRotateValue;
-        Utils.minMaxClip(currentRotatePos, 0, 1);
+        rotateIndex--;
+        Utils.minMaxClip(rotateIndex, 0, 4);
     }
 
     boolean releasingTwo = false;
@@ -245,15 +247,16 @@ public class Outtake2 {
                 break;
             case TRANSFER_IDLE:
 //                robot.slides.checkForIntake();
+                rotateIndex = 2;
                 servoArmLeft.setPosition(defaultArmLeft);
                 servoArmRight.setPosition(defaultArmRight);
                 outtakebar.setPosition(defaultOuttakeBarPos);
                 break;
             case INTAKE_POSITION:
+                rotateIndex = 2;
                 outtakebar.setPosition(intakeTilt);
                 servoArmLeft.setPosition(intakeArmLeft);
                 servoArmRight.setPosition(intakeArmRight);
-
                 break;
         }
         switch (clawState) {
@@ -278,7 +281,7 @@ public class Outtake2 {
                 clawRight.setPosition(clawRightOpen);
                 break;
         }
-        rotateServo.setPosition(currentRotatePos);
+        rotateServo.setPosition(rotateValues[rotateIndex]);
     }
     private class ChangeClawState implements Action {
 

@@ -21,7 +21,7 @@ public class TestingOpMode extends LinearOpMode {
     Robot3 robot2;
     GamePadController g1;
     private long lastLoopFinish = 0;
-    public static boolean usePoluu = false;
+    public static boolean usePoluu = true;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -82,7 +82,9 @@ public class TestingOpMode extends LinearOpMode {
 
     }
     private void slidesUpdate() {
-        robot2.slides.updatePower(-g1.left_trigger + g1.right_trigger);
+        double power = -g1.left_trigger + g1.right_trigger;
+        if(power == 0) power = 0.05;
+        robot2.slides.updatePower(power);
     }
     private void outtakeUpdate() {
         if(robot2.outtake.currentState == Outtake2.FourBarState.PRE_INTAKE) {
@@ -99,18 +101,29 @@ public class TestingOpMode extends LinearOpMode {
             if(robot2.outtake.currentState == Outtake2.FourBarState.INTAKE_POSITION) {
                 robot2.outtake.lastImportant = robot2.outtake.currentState;
                 robot2.outtake.currentState = Outtake2.FourBarState.TRANSFER_IDLE;
+
             }else if(robot2.outtake.currentState == Outtake2.FourBarState.TRANSFER_IDLE) {
                 if(robot2.outtake.lastImportant == Outtake2.FourBarState.INTAKE_POSITION) {
                     robot2.outtake.lastImportant = robot2.outtake.currentState;
+
                     robot2.outtake.currentState = Outtake2.FourBarState.OUTTAKE_POSITION;
+                    robot2.intake.capacPos = Intake2.CapacPos.DOWN;
                 }else {
                     robot2.outtake.lastImportant = robot2.outtake.currentState;
+                    robot2.outtake.clawState = Outtake2.ClawState.OPEN;
                     robot2.outtake.currentState = Outtake2.FourBarState.INTAKE_POSITION;
                 }
             }else {
                 robot2.outtake.lastImportant = robot2.outtake.currentState;
+
                 robot2.outtake.currentState = Outtake2.FourBarState.TRANSFER_IDLE;
             }
+        }
+        if(g1.dpadLeftOnce()) {
+            robot2.outtake.addRotate();
+        }
+        if(g1.dpadRightOnce()){
+            robot2.outtake.subRotate();
         }
     }
     private void updateTelemetry() {

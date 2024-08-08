@@ -43,7 +43,7 @@ public class Robot3 {
     public Robot3(HardwareMap hardwareMap) {
         hardwareQueue = new HardwareQueue();
 
-        drive = new MecanumDrive(hardwareMap,new Pose2d(0,0,0),hardwareQueue);
+        drive = new MecanumDrive(hardwareMap,new Pose2d(0,0,0));
 
         sensors = new Sensors(hardwareMap, hardwareQueue);
 

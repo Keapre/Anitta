@@ -75,10 +75,10 @@ public class Intake2 {
     public IntakeState intakeState = IntakeState.IDLE, lastIntakeState = IntakeState.IDLE;
 
     public static int indexTilt = 0;
+    public static int rotateIndex = 2;
     public double currentTilt = 0, lastTilt = 0;
-    public static double[] tiltPositions = new double[]{0.545, 0.56, 0.58, 0.6, 0.61, 0.7};
+    public static double[] tiltPositions = new double[]{0.6, 0.56, 0.58, 0.6, 0.61, 0.7};
     public static double[] capacPositions = new double[]{0.75, 0}; // 0 - open ,1 - closed
-
     public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
 
     final CachingServo capac;
@@ -109,6 +109,10 @@ public class Intake2 {
 
     public void updateIndexTiltHigh() {
         indexTilt = 5;
+    }
+
+    public void resetRotateIndex() {
+        rotateIndex = 2;
     }
 
     public void update() {
@@ -242,10 +246,10 @@ public class Intake2 {
                 reverseTimeStarting = System.currentTimeMillis();
                 started = true;
             } else {
-                if (System.currentTimeMillis() > reverseTimeStarting + 1500) {
+                if (System.currentTimeMillis() > reverseTimeStarting + 1400) {
                     g1.rumble(500);
                     findPixels = true;
-                    reverseForTime(1500);
+                    reverseForTime(1200);
                     capacPos = CapacPos.UP;
                     findPixels = true;
                 }

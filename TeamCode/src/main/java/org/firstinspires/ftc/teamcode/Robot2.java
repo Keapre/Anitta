@@ -37,7 +37,7 @@ public class Robot2 {
     public Robot2(HardwareMap hardwareMap) {
         hardwareQueue = new HardwareQueue();
 
-        drivetrain = new MecanumDrive(hardwareMap,new Pose2d(0,0,0),hardwareQueue);
+        drivetrain = new MecanumDrive(hardwareMap,new Pose2d(0,0,0));
         wolfPackDrive = new WolfPackDrive(drivetrain);
 
         sensors = new Sensors(hardwareMap, hardwareQueue);

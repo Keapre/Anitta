@@ -59,8 +59,8 @@ public class Sensors {
 
     public Sensors(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
         this.hardwareMap = hardwareMap;
-        //intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
-        //intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
+        intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
+        intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
 
         //this.robot = robot;
         allHubs = hardwareMap.getAll(LynxModule.class);
@@ -103,7 +103,7 @@ public class Sensors {
         huskyJustUpdated = false;
         long currTime = System.currentTimeMillis();
 
-        //int px = pixelCounter();
+        int px = pixelCounter();
 //        if (useIMU && currTime - imuLastUpdateTime >= imuUpdateTime) {
 //            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 //            imuHeading = orientation.getYaw(AngleUnit.RADIANS);
@@ -142,13 +142,13 @@ public class Sensors {
     public void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
     }
-//    public int pixelCounter() {
-//        int cnt = 0;
-//        if(!getLeftDistance()) cnt++;
-//        if(!getRightDistance()) cnt++;
-//        Globals.NUM_PIXELS = cnt;
-//        return cnt;
-//    }
+    public int pixelCounter() {
+        int cnt = 0;
+        if(!getLeftDistance()) cnt++;
+        if(getRightDistance()) cnt++;
+        Globals.NUM_PIXELS = cnt;
+        return cnt;
+    }
 
     private double previousAngle = 0.0;
     private int numRotations = 0;
@@ -162,13 +162,13 @@ public class Sensors {
         return imuHeading;
     }
 
-//    public boolean getLeftDistance() {
-//        return intakePixelLeft.getState();
-//    }
-//
-//    public boolean getRightDistance() {
-//        return intakePixelRight.getState();
-//    }
+    public boolean getLeftDistance() {
+        return intakePixelLeft.getState();
+    }
+
+    public boolean getRightDistance() {
+        return intakePixelRight.getState();
+    }
     public double getExtendoPos() {
         return extendoEncoder;
     }
