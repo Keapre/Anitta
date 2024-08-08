@@ -38,13 +38,14 @@ public class Slides2 {
         THIRD_THREESHOLD, //MAX
     }
 
-    public DcMotorEx sMotor1, sMotor2;
+    public CachingDcMotorEx sMotor1, sMotor2;
     Sensors sensors;
 
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
     int indexManualPowers = 0;
 
     public static double idlePower = 0.05;
+    public SlidesUpdate slidesUpdate;
     public static double extendPower = 0.8;
     public static double retractPower = -0.8;
     public static double kP = 0, kI = 0, kD = 0;
@@ -68,11 +69,12 @@ public class Slides2 {
     public SlidesState slidesState = SlidesState.MANUAL;
 
     public Slides2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot3 robot) {
+        slidesUpdate = new SlidesUpdate(robot);
         this.sensors = sensors;
         this.slidesState = SlidesState.MANUAL;
 
-        sMotor1 = hardwareMap.get(DcMotorEx.class, "outtake1"); //2-are encoder
-        sMotor2 = hardwareMap.get(DcMotorEx.class, "outtake2");
+        sMotor1 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake1")); //2-are encoder
+        sMotor2 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake2"));
 
         resetSlidesEncoder();
         pid = new EricPid(kP, kI, kD);
@@ -80,9 +82,9 @@ public class Slides2 {
     }
 
     void resetSlidesEncoder() {
-        sMotor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         sMotor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
+        sMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
         sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);

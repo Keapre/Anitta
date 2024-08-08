@@ -12,8 +12,10 @@ import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.TelemetryUtil;
 
+import java.util.List;
+
 public class Sensors {
-    private LynxModule controlHub, expansionHub;
+    private List<LynxModule> allHubs;
 
     private double leftFrontMotorCurrent, leftRearMotorCurrent, rightRearMotorCurrent, rightFrontMotorCurrent;
     public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
@@ -57,16 +59,18 @@ public class Sensors {
 
     public Sensors(HardwareMap hardwareMap, HardwareQueue hardwareQueue) {
         this.hardwareMap = hardwareMap;
-        intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
-        intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
+        //intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
+        //intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
 
         //this.robot = robot;
+        allHubs = hardwareMap.getAll(LynxModule.class);
+        for(LynxModule hub :allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        }
         initSensors(hardwareMap);
     }
 
     void initSensors(HardwareMap hardwareMap) {
-        controlHub = hardwareMap.get(LynxModule.class, "Control Hub");
-        controlHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
 
 //        huskyLens = hardwareMap.get(HuskyLens.class, "huskyLens");
 //        huskyLens.selectAlgorithm(HuskyLens.Algorithm.COLOR_RECOGNITION);
@@ -83,7 +87,7 @@ public class Sensors {
 //        expansionHub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
 //
 
-        voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
+        //voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
     }
 
     public void update() {
@@ -99,7 +103,7 @@ public class Sensors {
         huskyJustUpdated = false;
         long currTime = System.currentTimeMillis();
 
-        int px = pixelCounter();
+        //int px = pixelCounter();
 //        if (useIMU && currTime - imuLastUpdateTime >= imuUpdateTime) {
 //            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 //            imuHeading = orientation.getYaw(AngleUnit.RADIANS);
@@ -113,11 +117,11 @@ public class Sensors {
             huskyJustUpdated = true;
         }*/
 
-        if (currTime- lastVoltageUpdatedTime > updateTimeVoltage) {
-            voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
-            lastVoltageUpdatedTime = currTime;
-        }
-        timeTillNextIMUUpdate = imuUpdateTime - (currTime - imuLastUpdateTime);
+//        if (currTime- lastVoltageUpdatedTime > updateTimeVoltage) {
+//            voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
+//            lastVoltageUpdatedTime = currTime;
+//        }
+//        timeTillNextIMUUpdate = imuUpdateTime - (currTime - imuLastUpdateTime);
 /*        extendoEncoder = ((PriorityMotor) hardwareQueue.getDevice("extendo")).motor[0].getCurrentPosition(); //TODO : daca encoderu e reversed
         extendoVelocity = ((PriorityMotor) hardwareQueue.getDevice("extendo")).motor[0].getVelocity(); //SI AICI LA FEL
 
@@ -138,13 +142,13 @@ public class Sensors {
     public void updateTelemetry() {
         TelemetryUtil.packet.put("Voltage", voltage);
     }
-    public int pixelCounter() {
-        int cnt = 0;
-        if(!getLeftDistance()) cnt++;
-        if(!getRightDistance()) cnt++;
-        Globals.NUM_PIXELS = cnt;
-        return cnt;
-    }
+//    public int pixelCounter() {
+//        int cnt = 0;
+//        if(!getLeftDistance()) cnt++;
+//        if(!getRightDistance()) cnt++;
+//        Globals.NUM_PIXELS = cnt;
+//        return cnt;
+//    }
 
     private double previousAngle = 0.0;
     private int numRotations = 0;
@@ -158,13 +162,13 @@ public class Sensors {
         return imuHeading;
     }
 
-    public boolean getLeftDistance() {
-        return intakePixelLeft.getState();
-    }
-
-    public boolean getRightDistance() {
-        return intakePixelRight.getState();
-    }
+//    public boolean getLeftDistance() {
+//        return intakePixelLeft.getState();
+//    }
+//
+//    public boolean getRightDistance() {
+//        return intakePixelRight.getState();
+//    }
     public double getExtendoPos() {
         return extendoEncoder;
     }

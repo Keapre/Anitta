@@ -133,8 +133,8 @@ public final class MecanumDrive {
     public final AccelConstraint defaultAccelConstraint =
             new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
 
-    public final PriorityMotor leftFront, leftBack, rightBack, rightFront;
-    public final CachingDcMotorEx CleftFront, CleftBack, CrightBack, CrightFront;
+    //public final PriorityMotor leftFront, leftBack, rightBack, rightFront;
+    public final CachingDcMotorEx leftFront, leftBack, rightBack, rightFront;
     public final double MAX_TRANSLATIONAL_SPEED = 1;
     MultipleTelemetry telemetry;
     public static double xP = 0.024, xD = 0.028;
@@ -175,10 +175,10 @@ public final class MecanumDrive {
         private boolean initialized;
 
         public DriveLocalizer() {
-            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront.motor[0]));
-            leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack.motor[0]));
-            rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack.motor[0]));
-            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront.motor[0]));
+            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront));
+            leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack));
+            rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack));
+            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront));
 
             imu = lazyImu.get();
 
@@ -258,29 +258,29 @@ public final class MecanumDrive {
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
-        CrightFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightFront"));
-        CrightBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightBack"));
-        CleftBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftBack"));
-        CleftFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftFront"));
+        rightFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightFront"));
+        rightBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "rightBack"));
+        leftBack = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftBack"));
+        leftFront = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "leftFront"));
         // TODO: make sure your config has motors with these names (or change them)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        leftFront = new PriorityMotor(CleftFront, "leftFront", 5);
-        leftBack = new PriorityMotor(CleftBack, "leftBack", 5);
-        rightBack = new PriorityMotor(CrightBack, "rightBack", 5);
-        rightFront = new PriorityMotor(CrightFront, "rightFront", 5);
+//        leftFront = new PriorityMotor(CleftFront, "leftFront", 5);
+//        leftBack = new PriorityMotor(CleftBack, "leftBack", 5);
+//        rightBack = new PriorityMotor(CrightBack, "rightBack", 5);
+//        rightFront = new PriorityMotor(CrightFront, "rightFront", 5);
 
-        leftBack.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
-        leftFront.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
-        hardwareQueue.addDevice(leftFront);
-        hardwareQueue.addDevice(leftBack);
-        hardwareQueue.addDevice(rightBack);
-        hardwareQueue.addDevice(rightFront);
+//        hardwareQueue.addDevice(leftFront);
+//        hardwareQueue.addDevice(leftBack);
+//        hardwareQueue.addDevice(rightBack);
+//        hardwareQueue.addDevice(rightFront);
         // TODO: reverse motor directions if needed
         //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -341,10 +341,10 @@ public final class MecanumDrive {
             maxPowerMag = Math.max(maxPowerMag, power.value());
         }
 
-        leftFront.setTargetPower(wheelVels.leftFront.get(0) / maxPowerMag);
-        leftBack.setTargetPower(wheelVels.leftBack.get(0) / maxPowerMag);
-        rightBack.setTargetPower(wheelVels.rightBack.get(0) / maxPowerMag);
-        rightFront.setTargetPower(wheelVels.rightFront.get(0) / maxPowerMag);
+        leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);
+        leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
+        rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
+        rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
     public final class FollowTrajectoryAction implements Action {
@@ -379,10 +379,10 @@ public final class MecanumDrive {
             }
 
             if (t >= timeTrajectory.duration) {
-                leftFront.setPowerForced(0);
-                leftBack.setPowerForced(0);
-                rightBack.setPowerForced(0);
-                rightFront.setPowerForced(0);
+                leftFront.setPower(0);
+                leftBack.setPower(0);
+                rightBack.setPower(0);
+                rightFront.setPower(0);
 
                 return false;
             }
@@ -412,10 +412,10 @@ public final class MecanumDrive {
                     voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
             ));
 
-            leftFront.setTargetPower(leftFrontPower);
-            leftBack.setTargetPower(leftBackPower);
-            rightBack.setTargetPower(rightBackPower);
-            rightFront.setTargetPower(rightFrontPower);
+            leftFront.setPower(leftFrontPower);
+            leftBack.setPower(leftBackPower);
+            rightBack.setPower(rightBackPower);
+            rightFront.setPower(rightFrontPower);
 
             p.put("x", pose.position.x);
             p.put("y", pose.position.y);
@@ -481,10 +481,10 @@ public final class MecanumDrive {
             }
 
             if (t >= turn.duration) {
-                leftFront.setPowerForced(0);
-                leftBack.setPowerForced(0);
-                rightBack.setPowerForced(0);
-                rightFront.setPowerForced(0);
+                leftFront.setPower(0);
+                leftBack.setPower(0);
+                rightBack.setPower(0);
+                rightFront.setPower(0);
 
                 return false;
             }
@@ -513,10 +513,10 @@ public final class MecanumDrive {
                     voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
             ));
 
-            leftFront.setTargetPower(feedforward.compute(wheelVels.leftFront) / voltage);
-            leftBack.setTargetPower(feedforward.compute(wheelVels.leftBack) / voltage);
-            rightBack.setTargetPower(feedforward.compute(wheelVels.rightBack) / voltage);
-            rightFront.setTargetPower(feedforward.compute(wheelVels.rightFront) / voltage);
+            leftFront.setPower(feedforward.compute(wheelVels.leftFront) / voltage);
+            leftBack.setPower(feedforward.compute(wheelVels.leftBack) / voltage);
+            rightBack.setPower(feedforward.compute(wheelVels.rightBack) / voltage);
+            rightFront.setPower(feedforward.compute(wheelVels.rightFront) / voltage);
 
             Canvas c = p.fieldOverlay();
             drawPoseHistory(c);
@@ -563,7 +563,7 @@ public final class MecanumDrive {
     }
 
     private double getSpeedSum() {
-        return Math.abs(leftFront.motor[0].getVelocity()) + Math.abs(leftBack.motor[0].getVelocity()) + Math.abs(rightBack.motor[0].getVelocity()) + Math.abs(rightFront.motor[0].getVelocity());
+        return Math.abs(leftFront.getVelocity()) + Math.abs(leftBack.getVelocity()) + Math.abs(rightBack.getVelocity()) + Math.abs(rightFront.getVelocity());
     }
     public boolean isBusy() {
         return (getSpeedSum()) != 0;

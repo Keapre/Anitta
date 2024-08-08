@@ -62,15 +62,15 @@ public class Robot3 {
         updateSubsystems();
     }
     public void updateSubsystems() {
-        intake.update();
+        intake.Update.start();
         // plane.update();
-        slides.update();
-        extendo.update();
-        outtake.update();
+        slides.slidesUpdate.start();
+        extendo.update.start();
+        outtake.outtakeUpdate.start();
         //drivetrain.updatePoseEstimate();
         sensors.update();
 
-        hardwareQueue.update();
+        //hardwareQueue.update();
 
     }
 

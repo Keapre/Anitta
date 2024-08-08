@@ -252,51 +252,51 @@ public class Intake {
         tiltPos = TiltState.HIGH;
     }
 
-    private class IntakeCount implements  Action {
-        private long waitUntil;
-        private long finalTime;
-        private int pixelCount;
-        private boolean done;
-        private boolean jammed;
-        public IntakeCount(boolean fast) {
-            this.waitUntil = System.currentTimeMillis() + 300;
-            this.finalTime = System.currentTimeMillis() + (fast ? 3000 : 6000);
-
-        }
-        public Action intakeCount(boolean fast) {
-            return new SequentialAction(
-                    new IntakeCount(fast),
-                    reverseMotor(300)
-            );
-        }
-        @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            if(done) {
-                return System.currentTimeMillis() < waitUntil;
-            }
-
-            if(jammed) {
-                if(!intakeMotor.motor[0].isOverCurrent()) {
-                    this.jammed = false;
-                    return System.currentTimeMillis() < finalTime;
-                }
-                if (System.currentTimeMillis() >= waitUntil) {
-                    intakeReverseInstant();
-                    return System.currentTimeMillis() < finalTime;
-                }
-            }
-            if (intakeMotor.motor[0].isOverCurrent()) {
-                this.jammed = true;
-                return System.currentTimeMillis() < finalTime;
-            }
-            pixelCount = robot2.sensors.pixelCounter();
-            if (pixelCount >= 2) {
-                done = true;
-                return true;
-            }
-            return System.currentTimeMillis() < finalTime;
-        }
-    }
+//    private class IntakeCount implements  Action {
+//        private long waitUntil;
+//        private long finalTime;
+//        private int pixelCount;
+//        private boolean done;
+//        private boolean jammed;
+//        public IntakeCount(boolean fast) {
+//            this.waitUntil = System.currentTimeMillis() + 300;
+//            this.finalTime = System.currentTimeMillis() + (fast ? 3000 : 6000);
+//
+//        }
+//        public Action intakeCount(boolean fast) {
+//            return new SequentialAction(
+//                    new IntakeCount(fast),
+//                    reverseMotor(300)
+//            );
+//        }
+//        @Override
+//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//            if(done) {
+//                return System.currentTimeMillis() < waitUntil;
+//            }
+//
+//            if(jammed) {
+//                if(!intakeMotor.motor[0].isOverCurrent()) {
+//                    this.jammed = false;
+//                    return System.currentTimeMillis() < finalTime;
+//                }
+//                if (System.currentTimeMillis() >= waitUntil) {
+//                    intakeReverseInstant();
+//                    return System.currentTimeMillis() < finalTime;
+//                }
+//            }
+//            if (intakeMotor.motor[0].isOverCurrent()) {
+//                this.jammed = true;
+//                return System.currentTimeMillis() < finalTime;
+//            }
+//            pixelCount = robot2.sensors.pixelCounter();
+//            if (pixelCount >= 2) {
+//                done = true;
+//                return true;
+//            }
+//            return System.currentTimeMillis() < finalTime;
+//        }
+//    }
     private class changeTiltState implements Action {
 
         TiltState state;

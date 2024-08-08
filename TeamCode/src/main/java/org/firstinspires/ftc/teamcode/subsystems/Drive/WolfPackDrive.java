@@ -130,10 +130,10 @@ public class WolfPackDrive {
         }
 
         // set motor powers
-        mecanumDrivebase.leftFront.setTargetPower(leftFrontPower);
-        mecanumDrivebase.leftBack.setTargetPower(leftBackPower);
-        mecanumDrivebase.rightBack.setTargetPower(rightBackPower);
-        mecanumDrivebase.rightFront.setTargetPower(rightFrontPower);
+        mecanumDrivebase.leftFront.setPower(leftFrontPower);
+        mecanumDrivebase.leftBack.setPower(leftBackPower);
+        mecanumDrivebase.rightBack.setPower(rightBackPower);
+        mecanumDrivebase.rightFront.setPower(rightFrontPower);
     }
     public void resetYaw() {
         this.mecanumDrivebase.lazyImu.get().resetYaw();

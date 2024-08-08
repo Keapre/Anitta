@@ -1,12 +1,13 @@
 package org.firstinspires.ftc.teamcode.subsystems.Outtake;
 
 import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.Robot3;
 
 public class OuttakeUpdate extends Thread {
 
-    public Robot2 robot;
+    public Robot3 robot;
 
-    public OuttakeUpdate(Robot2 robot) {
+    public OuttakeUpdate(Robot3 robot) {
         this.robot = robot;
     }
 

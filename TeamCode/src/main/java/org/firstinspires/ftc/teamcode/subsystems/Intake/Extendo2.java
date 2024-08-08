@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcontroller.internal.FtcOpModeRegister;
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.Robot3;
+import org.firstinspires.ftc.teamcode.subsystems.Outtake.SlidesUpdate;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
@@ -39,7 +40,6 @@ public class Extendo2 {
     public static double extendPower = 1;
     public static double idlePower = 1;
 
-    PriorityMotor extendoMotor;
 
     public static double extendoPower = 0.0;
     int indexManualPowers = 0;
@@ -60,6 +60,7 @@ public class Extendo2 {
     public static double ticksToInches = 0.0; //TUNE
     public static double maxSlidesHeight = 27.891; //TUNE
     final EricPid pid;
+    public ExtendoUpdate update;
 
     public static double targetPosition = 0;
     public ExtendoState extendoState = ExtendoState.IDLE;
@@ -67,19 +68,14 @@ public class Extendo2 {
     public Extendo2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot3 robot) {
         this.sensors = sensors;
         this.extendoState = ExtendoState.IDLE;
+        update = new ExtendoUpdate(robot);
 
         if(Globals.RUNMODE == Perioada.TELEOP) {
             extendoState = ExtendoState.IDLE;
         }
         eMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "extendo"));
 
-        extendoMotor = new PriorityMotor(
-                eMotor,
-                "extendo",
-                2
-        );
         resetSlidesEncoder();
-        hardwareQueue.addDevice(extendoMotor);
         this.robot = robot;
         pid = new EricPid(kP, kI, kD);
     }
@@ -87,14 +83,12 @@ public class Extendo2 {
         return extendoPower;
     }
     void resetSlidesEncoder() {
-        extendoMotor.motor[0].setPower(0);
+        eMotor.setPower(0);
 //        extendoMotor.motor[0].setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        extendoMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
-        extendoMotor.motor[0].setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-        extendoMotor.motor[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        eMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         targetPosition = 0;
 
-        extendoMotor.motor[0].setPower(0);
     }
 
     public void updatePower(double Power) {
@@ -109,7 +103,7 @@ public class Extendo2 {
         }
         power = pid.update(lenght) + kg;
 
-        extendoMotor.setTargetPower(power);
+        eMotor.setPower(power);
     }
     public void updateManualPower(GamePadController g1) {
 
@@ -134,13 +128,13 @@ public class Extendo2 {
         vel = sensors.getExtendoVelocity() * ticksToInches;
         switch (extendoState) {
             case EXTEND:
-                extendoMotor.setTargetPower(1);
+                eMotor.setPower(1);
                 break;
             case RETRACT:
-                extendoMotor.setTargetPower(retractPower);
+                eMotor.setPower(retractPower);
                 break;
             case IDLE:
-                extendoMotor.setTargetPower(0.01);
+                eMotor.setPower(0.01);
                 break;
             case FIRST_THRESHOLD:
                 setTargetLength(distancesThreeshold[0]);
@@ -163,7 +157,7 @@ public class Extendo2 {
     }
 
     public void forceShutDown() {
-        extendoMotor.setPowerForced(0);
+        eMotor.setPower(0);
     }
 
     public double getLength() {

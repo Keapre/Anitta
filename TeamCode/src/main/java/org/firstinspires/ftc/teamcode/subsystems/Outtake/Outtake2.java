@@ -53,20 +53,20 @@ public class Outtake2 {
     public FourBarState lastImportant = FourBarState.TRANSFER_IDLE;
 
     public ClawState clawState = ClawState.OPEN;
-    public final PriorityServo clawLeft, clawRight;
-    public final PriorityServo rotateServo;
+    public final CachingServo clawLeft, clawRight;
+    public final CachingServo rotateServo;
 
-    public final PriorityServo outtakebar;
+    public final CachingServo outtakebar;
 
     public  boolean dropLeftPixel = false;
     public  boolean dropRightPixel = false;
-    public final PriorityServo servoArmLeft, servoArmRight;
+    public final CachingServo servoArmLeft, servoArmRight;
 
     Robot3 robot;
     public double defaultRotatePos = 0.56;
     public double currentRotatePos = defaultRotatePos;
 
-    public static double defaultOuttakeBarPos = 0.24;
+    public static double defaultOuttakeBarPos = 0.14;
     public static double defaultArmLeft = 0.3;
     public static double defaultArmRight = 0.7;
     public static double intakeArmRight = 0.85;
@@ -87,40 +87,22 @@ public class Outtake2 {
     public double scoringArmRight = 0.45;
     public double deltaRotateValue = 0.1;
 
+    public OuttakeUpdate outtakeUpdate;
 
     public Outtake2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot3 robot) {
-        clawLeft = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "clawLeft")),
-                "clawLeft", 0.2, PriorityServo.ServoType.AXON_MINI, clawLeftClosed, clawLeftClosed, false);
-        clawRight = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "clawRight")),
-                "clawRight", 0.2, PriorityServo.ServoType.AXON_MINI, clawRightClosed, clawRightClosed, false);
+        outtakeUpdate = new OuttakeUpdate(robot);
+        clawLeft = new CachingServo(hardwareMap.get(Servo.class, "clawLeft"));
+        clawRight = new CachingServo(hardwareMap.get(Servo.class, "clawRight"));
+        rotateServo = new CachingServo(hardwareMap.get(Servo.class, "rotateOuttake"));
 
-        rotateServo = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "rotateOuttake")),
-                "rotateServo", 0.3, PriorityServo.ServoType.AXON_MINI, defaultRotatePos, defaultRotatePos, false);
+        outtakebar = new CachingServo(hardwareMap.get(Servo.class, "tiltOuttake"));
+        servoArmLeft = new CachingServo(hardwareMap.get(Servo.class, "leftServo"));
 
-        outtakebar = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "tiltOuttake")),
-                "outtakebar", 0.35, PriorityServo.ServoType.AXON_MINI, defaultOuttakeBarPos, defaultOuttakeBarPos, false);
-
-        servoArmLeft = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "leftServo")),
-                "servoArmLeft", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmLeft, defaultArmLeft, false);
-
-        servoArmRight = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "rightServo")),
-                "servoArmRight", 0.4, PriorityServo.ServoType.AXON_MINI, defaultArmRight, defaultArmRight, false);
+        servoArmRight = new CachingServo(hardwareMap.get(Servo.class, "rightServo"));
 
         currentState = FourBarState.TRANSFER_IDLE;
         clawState = ClawState.CLOSE;
         this.robot = robot;
-        hardwareQueue.addDevice(clawLeft);
-        hardwareQueue.addDevice(clawRight);
-        hardwareQueue.addDevice(rotateServo);
-        hardwareQueue.addDevice(outtakebar);
-        hardwareQueue.addDevice(servoArmLeft);
-        hardwareQueue.addDevice(servoArmRight);
     }
 
     public boolean isBusy() {
@@ -221,36 +203,36 @@ public class Outtake2 {
         clawRight.setPosition(clawRightClosed);
     }
 
-    public Action clawOpen() {
-        return new ParallelAction(
-                new ActionUtil.ServoPositionAction(clawLeft,clawLeftOpen),
-                new ActionUtil.ServoPositionAction(clawRight,clawRightOpen)
-        );
-    }
-    public Action clawClosed() {
-        return new ParallelAction(
-                new ActionUtil.ServoPositionAction(clawLeft,clawLeftClosed),
-                new ActionUtil.ServoPositionAction(clawRight,clawRightClosed)
-        );
-    }
+//    public Action clawOpen() {
+//        return new ParallelAction(
+//                new ActionUtil.ServoPositionAction(clawLeft,clawLeftOpen),
+//                new ActionUtil.ServoPositionAction(clawRight,clawRightOpen)
+//        );
+//    }
+//    public Action clawClosed() {
+//        return new ParallelAction(
+//                new ActionUtil.ServoPositionAction(clawLeft,clawLeftClosed),
+//                new ActionUtil.ServoPositionAction(clawRight,clawRightClosed)
+//        );
+//    }
 
-    public Action scoringPos() {
-        setOuttakeState(FourBarState.OUTTAKE_POSITION);
-        return new ParallelAction(
-                new ActionUtil.ServoPositionAction(servoArmLeft,scoringArmLeft),
-                new ActionUtil.ServoPositionAction(servoArmRight,scoringArmRight),
-                new ActionUtil.ServoPositionAction(outtakebar,scoringOuttakeBarPose)
-        );
-    }
+//    public Action scoringPos() {
+//        setOuttakeState(FourBarState.OUTTAKE_POSITION);
+//        return new ParallelAction(
+//                new ActionUtil.ServoPositionAction(servoArmLeft,scoringArmLeft),
+//                new ActionUtil.ServoPositionAction(servoArmRight,scoringArmRight),
+//                new ActionUtil.ServoPositionAction(outtakebar,scoringOuttakeBarPose)
+//        );
+//    }
 
-    public Action transferPos() {
-        setOuttakeState(FourBarState.TRANSFER_IDLE);
-        return new ParallelAction(
-                new ActionUtil.ServoPositionAction(servoArmRight,defaultArmRight),
-                new ActionUtil.ServoPositionAction(servoArmLeft,defaultArmLeft),
-                new ActionUtil.ServoPositionAction(outtakebar,defaultOuttakeBarPos)
-        );
-    }
+//    public Action transferPos() {
+//        setOuttakeState(FourBarState.TRANSFER_IDLE);
+//        return new ParallelAction(
+//                new ActionUtil.ServoPositionAction(servoArmRight,defaultArmRight),
+//                new ActionUtil.ServoPositionAction(servoArmLeft,defaultArmLeft),
+//                new ActionUtil.ServoPositionAction(outtakebar,defaultOuttakeBarPos)
+//        );
+//    }
     public void update() {
         switch (currentState) {
             case IDLE:

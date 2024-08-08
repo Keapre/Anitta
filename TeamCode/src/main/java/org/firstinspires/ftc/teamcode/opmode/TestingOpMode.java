@@ -122,8 +122,8 @@ public class TestingOpMode extends LinearOpMode {
         telemetry.addData("speed Motor",robot2.intake.intakeState);
         telemetry.addData("extendoPower",robot2.extendo.getPower());
         telemetry.addData("extendoState",robot2.extendo.extendoState);
-        telemetry.addData("pixelLeft",robot2.sensors.getLeftDistance());
-        telemetry.addData("pixelRight",robot2.sensors.getRightDistance());
+//        telemetry.addData("pixelLeft",robot2.sensors.getLeftDistance());
+//        telemetry.addData("pixelRight",robot2.sensors.getRightDistance());
         telemetry.addData("Pixels",Globals.NUM_PIXELS);
         telemetry.addLine("                     OUTTAKE");
         telemetry.addData("OuttakeState",robot2.outtake.currentState);
