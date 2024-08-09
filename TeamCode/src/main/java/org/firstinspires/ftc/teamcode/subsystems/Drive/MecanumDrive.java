@@ -42,6 +42,7 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.rr.Localizer;
 import org.firstinspires.ftc.teamcode.rr.TwoDeadWheelLocalizer;
 import org.firstinspires.ftc.teamcode.rr.messages.DriveCommandMessage;
@@ -57,14 +58,20 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Config
-public final class MecanumDrive {
-    boolean slow_mode = false;
-    double slow_driving = 0.5;
+public final class MecanumDrive implements Subsystem {
+    public boolean slow_mode = false;
+    double slow_driving = 0.6;
     double slow_turnSpeed = 0.3;
 
     double drivingSpeed = 0.8;
 
     double turnSpeed = 0.5;
+
+    @Override
+    public void update() {
+        this.updatePoseEstimate();
+    }
+
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
@@ -284,18 +291,18 @@ public final class MecanumDrive {
         double input_y = Math.pow(-gamepad1.left_stick_x, 3);
 
 
-        double input_turn = Math.pow(-gamepad1.right_stick_x, 3);
+
+        double input_turn = 0;
+        if(gamepad1.rightBumper()) input_turn = 0.5;
+        if(gamepad1.leftBumper()) input_turn = -0.5;
 
         if(slow_mode) {
             input_x*=slow_driving;
             input_y*=slow_driving;
-            input_turn*=slow_turnSpeed;
-        }else {
-            input_turn*=turnSpeed;
+            input_turn=0.3;
         }
         Vector2d input = new Vector2d(input_x, input_y);
         input_turn = Range.clip(input_turn, -1, 1);
-        PoseVelocity2d rel = updatePoseEstimate();
         input = this.pose.heading.inverse().times(input); //field centric
 
         setDrivePowers(new PoseVelocity2d(input,input_turn));

@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.Robot3;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
@@ -22,7 +23,7 @@ import org.firstinspires.ftc.teamcode.util.Utils;
 
 
 @Config
-public class Outtake2 {
+public class Outtake2 implements Subsystem {
 
     public enum FourBarState {
         IDLE,
@@ -31,6 +32,15 @@ public class Outtake2 {
         INTAKE_POSITION,
         PRE_INTAKE,
         OUTTAKE_POSITION,
+    }
+
+    public enum ROTATESTATE {
+        DEFAULT,
+        LEFT90,
+        LEFt45,
+
+        RIGHT45,
+        RIGHT90
     }
 
     public enum ClawState {
@@ -50,7 +60,7 @@ public class Outtake2 {
     public static double releaseTime = 250;
     public static double timer = 0;
     public FourBarState currentState = FourBarState.IDLE;
-    public FourBarState lastImportant = FourBarState.TRANSFER_IDLE;
+    public FourBarState lastImportant = FourBarState.OUTTAKE_POSITION;
 
     public ClawState clawState = ClawState.OPEN;
     public final CachingServo clawLeft, clawRight;
@@ -75,6 +85,7 @@ public class Outtake2 {
     public static double intakeArmLeft = 0.15;
     public static double intakeTilt = 0.16;
 
+    ROTATESTATE rotateState = ROTATESTATE.DEFAULT;
     public static double preIntakeArmLeft = 0.19;
     public static double prePreIntakeArmRight = 0.81;
     public static double preIntakeTilt = 0.20;
@@ -84,14 +95,14 @@ public class Outtake2 {
     public static double clawRightClosed = 0.21;
 
 
-    public static double scoringOuttakeBarPose = 0.86;
-    public static double scoringArmLeft = 0.55;
-    public static double scoringArmRight = 0.45;
+    public static double scoringOuttakeBarPose = 0.80;
+    public static double scoringArmLeft = 0.60;
+    public static double scoringArmRight = 0.40;
     public double deltaRotateValue = 0.1;
 
     public OuttakeUpdate outtakeUpdate;
 
-    public Outtake2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot3 robot) {
+    public Outtake2(HardwareMap hardwareMap, Robot3 robot) {
         outtakeUpdate = new OuttakeUpdate(robot);
         clawLeft = new CachingServo(hardwareMap.get(Servo.class, "clawLeft"));
         clawRight = new CachingServo(hardwareMap.get(Servo.class, "clawRight"));
@@ -180,6 +191,9 @@ public class Outtake2 {
         releasingTwo = true;
     }
 
+    public int getRotateIndex() {
+        return rotateIndex;
+    }
     public void updateRelease() {
         if (System.currentTimeMillis() - timer >= releaseTime) {
             busy = false;
@@ -235,6 +249,7 @@ public class Outtake2 {
 //                new ActionUtil.ServoPositionAction(outtakebar,defaultOuttakeBarPos)
 //        );
 //    }
+
     public void update() {
         switch (currentState) {
             case IDLE:

@@ -13,8 +13,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcontroller.internal.FtcOpModeRegister;
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.Robot3;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.SlidesUpdate;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.Sensors2;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
@@ -24,7 +26,7 @@ import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.control.EricPid;
 
 @Config
-public class Extendo2 {
+public class Extendo2 implements Subsystem {
     public enum ExtendoState {
         EXTEND,
         RETRACT,
@@ -35,7 +37,7 @@ public class Extendo2 {
     }
 
     CachingDcMotorEx eMotor;
-    Sensors sensors;
+    Sensors2 sensors;
     public static double retractPower = -1;
     public static double extendPower = 1;
     public static double idlePower = 1;
@@ -65,7 +67,7 @@ public class Extendo2 {
     public static double targetPosition = 0;
     public ExtendoState extendoState = ExtendoState.IDLE;
 
-    public Extendo2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot3 robot) {
+    public Extendo2(HardwareMap hardwareMap, Sensors2 sensors, Robot3 robot) {
         this.sensors = sensors;
         this.extendoState = ExtendoState.IDLE;
         update = new ExtendoUpdate(robot);
@@ -134,7 +136,7 @@ public class Extendo2 {
                 eMotor.setPower(retractPower);
                 break;
             case IDLE:
-                eMotor.setPower(0.01);
+                eMotor.setPower(-0.125);
                 break;
             case FIRST_THRESHOLD:
                 setTargetLength(distancesThreeshold[0]);

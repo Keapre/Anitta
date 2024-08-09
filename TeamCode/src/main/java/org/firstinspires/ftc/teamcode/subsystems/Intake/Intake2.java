@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 //import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.Robot3;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
@@ -28,7 +29,7 @@ import org.firstinspires.ftc.teamcode.util.Utils;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @Config
-public class Intake2 {
+public class Intake2 implements Subsystem {
 
     public enum TiltState {
         LOW,
@@ -46,6 +47,7 @@ public class Intake2 {
             return values()[ordinal() + 1];
         }
     }
+
 
     public enum CapacPos {
         UP,
@@ -77,8 +79,8 @@ public class Intake2 {
     public static int indexTilt = 0;
     public static int rotateIndex = 2;
     public double currentTilt = 0, lastTilt = 0;
-    public static double[] tiltPositions = new double[]{0.6, 0.56, 0.58, 0.6, 0.61, 0.7};
-    public static double[] capacPositions = new double[]{0.75, 0}; // 0 - open ,1 - closed
+    public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.66, 0.68, 0.72};
+    public static double[] capacPositions = new double[]{0.7, 0}; // 0 - open ,1 - closed
     public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
 
     final CachingServo capac;
@@ -86,7 +88,7 @@ public class Intake2 {
 
     final CachingDcMotorEx intakeMotor;
 
-    public Intake2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot3 robot2) {
+    public Intake2(HardwareMap hardwareMap, Robot3 robot2) {
         findPixels = false;
         started = false;
         Update = new IntakeUpdate(robot2);
@@ -194,12 +196,12 @@ public class Intake2 {
 
     public void addTilt() {
         indexTilt++;
-        indexTilt = Utils.minMaxClipInt(indexTilt, 0, 5);
+        Utils.minMaxClip(indexTilt,0,5);
     }
 
     public void substractTilt() {
         indexTilt--;
-        indexTilt = Utils.minMaxClipInt(indexTilt, 0, 5);
+        Utils.minMaxClip(indexTilt,0,5);
     }
 
     public int getIndexTilt() {
@@ -249,7 +251,7 @@ public class Intake2 {
                 if (System.currentTimeMillis() > reverseTimeStarting + 1400) {
                     g1.rumble(500);
                     findPixels = true;
-                    reverseForTime(1200);
+                    reverseForTime(1000);
                     capacPos = CapacPos.UP;
                     findPixels = true;
                 }

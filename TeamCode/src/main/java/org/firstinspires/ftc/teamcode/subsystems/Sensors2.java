@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.util.TelemetryUtil;
 
 import java.util.List;
 
-public class Sensors implements Subsystem {
+public class Sensors2 implements Subsystem {
     private List<LynxModule> allHubs;
 
     private double leftFrontMotorCurrent, leftRearMotorCurrent, rightRearMotorCurrent, rightFrontMotorCurrent;
@@ -35,6 +35,7 @@ public class Sensors implements Subsystem {
     private long imuLastUpdateTime = System.currentTimeMillis();
     private double imuHeading = 0.0;
     public boolean useIMU;
+    public int numPixels = 0;
 
 
     HardwareMap hardwareMap;
@@ -58,11 +59,13 @@ public class Sensors implements Subsystem {
 
     public boolean huskyLensEnabled = false;
 
-    public Sensors(HardwareMap hardwareMap,HardwareQueue hardwareQueue) {
+    public Sensors2(HardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
         intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
         intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
 
+        intakePixelLeft.setMode(DigitalChannel.Mode.INPUT);
+        intakePixelRight.setMode(DigitalChannel.Mode.INPUT);
         //this.robot = robot;
         allHubs = hardwareMap.getAll(LynxModule.class);
         for(LynxModule hub :allHubs) {
@@ -104,7 +107,7 @@ public class Sensors implements Subsystem {
         huskyJustUpdated = false;
         long currTime = System.currentTimeMillis();
 
-        int px = pixelCounter();
+        numPixels = pixelCounter();
 //        if (useIMU && currTime - imuLastUpdateTime >= imuUpdateTime) {
 //            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 //            imuHeading = orientation.getYaw(AngleUnit.RADIANS);
@@ -146,7 +149,7 @@ public class Sensors implements Subsystem {
     public int pixelCounter() {
         int cnt = 0;
         if(!getLeftDistance()) cnt++;
-        if(getRightDistance()) cnt++;
+        if(!getRightDistance()) cnt++;
         Globals.NUM_PIXELS = cnt;
         return cnt;
     }

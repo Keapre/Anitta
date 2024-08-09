@@ -15,7 +15,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot2;
 import org.firstinspires.ftc.teamcode.Robot3;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.Sensors2;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
@@ -25,7 +27,7 @@ import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.control.EricPid;
 
 @Config
-public class Slides2 {
+public class Slides2 implements Subsystem {
 
     Robot3 robot;
 
@@ -39,7 +41,7 @@ public class Slides2 {
     }
 
     public CachingDcMotorEx sMotor1, sMotor2;
-    Sensors sensors;
+    Sensors2 sensors;
 
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
     int indexManualPowers = 0;
@@ -68,7 +70,7 @@ public class Slides2 {
     public static double targetPosition = 0;
     public SlidesState slidesState = SlidesState.MANUAL;
 
-    public Slides2(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Sensors sensors, Robot3 robot) {
+    public Slides2(HardwareMap hardwareMap,Sensors2 sensors, Robot3 robot) {
         slidesUpdate = new SlidesUpdate(robot);
         this.sensors = sensors;
         this.slidesState = SlidesState.MANUAL;

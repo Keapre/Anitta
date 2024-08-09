@@ -1,78 +1,239 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.teamcode.util.Globals.START_LOOP;
 
+import android.util.Log;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpModeManagerNotifier;
+import com.qualcomm.robotcore.util.GlobalWarningSource;
+import com.qualcomm.robotcore.util.MovingStatistics;
+import com.qualcomm.robotcore.util.RobotLog;
+import com.qualcomm.robotcore.util.ThreadPool;
 
-import org.firstinspires.ftc.teamcode.subsystems.Drive.BetaDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Drive.MecanumDrive;
-import org.firstinspires.ftc.teamcode.subsystems.Drive.WolfPackDrive;
-import org.firstinspires.ftc.teamcode.subsystems.EndGame.Plane;
-import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo2;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake2;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake2;
-import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides2;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
-import org.firstinspires.ftc.teamcode.util.Globals;
-import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
+import org.firstinspires.ftc.teamcode.subsystems.Sensors2;
 
-public class Robot3 {
-    HardwareQueue hardwareQueue;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
-    public final MecanumDrive drive;
-//    public final WolfPackDrive wolfPackDrive;
 
-    public final Sensors sensors;
+@Config
+public class Robot3 implements OpModeManagerNotifier.Notifications, GlobalWarningSource {
+    public static final String TAG = "Robot";
 
-    public final Intake2 intake;
 
-//    public final Plane plane;
-    //public final BetaDrive drive;
+    public MecanumDrive drive;
+    public Intake2 intake;
+    public Outtake2 outtake;
+    public Extendo2 extendo;
+    public Sensors2 sensors;
 
-    public final Slides2 slides;
+    public Slides2 slides;
 
-    public final Extendo2 extendo;
+    private LynxModule hub1;
+    private LynxModule hub2;
 
-    public final Outtake2 outtake;
+    private List<Subsystem> subsystems;
+    private List<Subsystem> subsystemsWithProblems;
+    private ExecutorService subsystemUpdateExecutor;
+    public FtcDashboard dashboard;
+    public MovingStatistics top250, top100, top10;
+    public Map<Subsystem, MovingStatistics> top100Subsystems = new HashMap<>();
 
-    public Robot3(HardwareMap hardwareMap) {
-        hardwareQueue = new HardwareQueue();
+    private boolean started;
 
-        drive = new MecanumDrive(hardwareMap,new Pose2d(0,0,0));
+    private static double getCurrentTime() {
+        return System.nanoTime() / 1_000_000_000.0;
+    }
 
-        sensors = new Sensors(hardwareMap, hardwareQueue);
+    private Runnable subsystemUpdateRunnable = () -> {
+        double startTime, temp;
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                startTime = getCurrentTime(); // Get start time of update
+//                hub1.clearBulkCache();
+//                hub2.clearBulkCache();
+//                hub1.getBulkData();
+//                hub2.getBulkData();
+                for (Subsystem subsystem : subsystems) { // Update all subsystems
+                    if (subsystem == null) continue;
+                    try {
+                        double t = getCurrentTime();
+                        subsystem.update();
+                        top100Subsystems.get(subsystem).add(getCurrentTime() - t);
+                        subsystemsWithProblems.remove(subsystem);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Subsystem update failed for " + subsystem.getClass().getSimpleName() + ": " + t.getMessage());
+                        Log.w(TAG, t);
+                        if (!subsystemsWithProblems.contains(subsystem))
+                            subsystemsWithProblems.add(subsystem);
+                    }
+                }
+                temp = getCurrentTime() - startTime; // Calculate loop time
+                top10.add(temp); // Add loop time to different statistics
+                top100.add(temp);
+                top250.add(temp);
+            } catch (Throwable t) {
+                Log.wtf(TAG, t); // If we get here, then something really weird happened.
+            }
+        }
+    };
 
-        intake = new Intake2(hardwareMap, hardwareQueue,this);
+    public Robot3(OpMode opMode, boolean isAutonomous) {
+        // Initialize statistics
+        top10 = new MovingStatistics(10);
+        top100 = new MovingStatistics(100);
+        top250 = new MovingStatistics(250);
 
-        outtake = new Outtake2(hardwareMap,hardwareQueue,this);
+        dashboard = FtcDashboard.getInstance();
+        dashboard.setTelemetryTransmissionInterval(25);
 
-        extendo = new Extendo2(hardwareMap, hardwareQueue,sensors,this);
+        hub1 = opMode.hardwareMap.get(LynxModule.class, "Control Hub");
+        hub2 = opMode.hardwareMap.get(LynxModule.class, "Expansion Hub 5");
 
-        slides = new Slides2(hardwareMap,hardwareQueue,sensors,this);
+        hub1.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        hub2.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+
+        //region Initialize subsystems
+        subsystems = new ArrayList<>();
+        try {
+            sensors = new Sensors2(opMode.hardwareMap);
+            subsystems.add(sensors);
+            Log.w(TAG, "Sensors intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Sensors: " + e.getMessage());
+        }
+        try {
+            drive = new MecanumDrive(opMode.hardwareMap, new Pose2d(0,0,0));
+            subsystems.add(drive);
+            Log.w(TAG, "DriveTrain intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize DriveTrain: " + e.getMessage());
+        }
+        try {
+            intake = new Intake2(opMode.hardwareMap, this);
+            subsystems.add(intake);
+            Log.w(TAG, "Intake intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Intake: " + e.getMessage());
+        }
+        try {
+            outtake = new Outtake2(opMode.hardwareMap, this);
+            subsystems.add(outtake);
+            Log.w(TAG, "Outtake intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Outtake: " + e.getMessage());
+        }
+        try {
+            slides = new Slides2(opMode.hardwareMap, sensors,this);
+            subsystems.add(slides);
+            Log.w(TAG, "Elevator intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Elevator: " + e.getMessage());
+        }
+        try {
+            extendo = new Extendo2(opMode.hardwareMap, sensors,this);
+            subsystems.add(extendo);
+            Log.w(TAG, "Climb intialized successfully");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Climb: " + e.getMessage());
+        }
+
+        //endregion
+        for (Subsystem subsystem : subsystems) {
+            top100Subsystems.put(subsystem, new MovingStatistics(100));
+        }
+
+        // Initialize update thread
+        subsystemUpdateExecutor = ThreadPool.newSingleThreadExecutor("subsystem update");
+        subsystemsWithProblems = new ArrayList<>();
+    }
+
+    public void start() {
+        if (!started) {
+            subsystemUpdateExecutor.submit(subsystemUpdateRunnable);
+            started = true;
+        }
+    }
+
+    public void stop() {
+        if (started && subsystemUpdateExecutor != null) {
+            subsystemUpdateExecutor.shutdownNow();
+            subsystemUpdateExecutor = null;
+            for (Subsystem subsystem : subsystems) {
+                subsystem.stop();
+            }
+        }
+    }
+
+    public void sleep(double seconds) {
+        try {
+            Thread.sleep(Math.round(1000 * seconds));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+    //region Automatically Stop Robot Loop
+    @Override
+    public void onOpModePreInit(OpMode opMode) {
 
     }
 
-    public void update() {
-        START_LOOP();
-        updateSubsystems();
-    }
-    public void updateSubsystems() {
-        intake.Update.start();
-        // plane.update();
-        slides.slidesUpdate.start();
-        extendo.update.start();
-        outtake.outtakeUpdate.start();
-        //drivetrain.updatePoseEstimate();
-        sensors.update();
-
-        //hardwareQueue.update();
+    @Override
+    public void onOpModePreStart(OpMode opMode) {
 
     }
 
+    @Override
+    public void onOpModePostStop(OpMode opMode) {
+        stop();
+    }
+    //endregion
 
+    //region Global Warnings
+    @Override
+    public String getGlobalWarning() {
+        List<String> warnings = new ArrayList<>();
+        for (Subsystem subsystem : subsystemsWithProblems) {
+            warnings.add("Problem with " + subsystem.getClass().getSimpleName());
+        }
+        return RobotLog.combineGlobalWarnings(warnings);
+    }
+
+    @Override
+    public boolean shouldTriggerWarningSound() {
+        return false;
+    }
+
+    @Override
+    public void suppressGlobalWarning(boolean suppress) {
+
+    }
+
+    @Override
+    public void setGlobalWarning(String warning) {
+
+    }
+
+    @Override
+    public void clearGlobalWarning() {
+        subsystemsWithProblems.clear();
+    }
+    //endregion
 }

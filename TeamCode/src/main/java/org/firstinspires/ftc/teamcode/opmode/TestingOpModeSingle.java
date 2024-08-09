@@ -1,47 +1,29 @@
 package org.firstinspires.ftc.teamcode.opmode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 
 import org.firstinspires.ftc.teamcode.Robot3;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo2;
-import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake2;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake2;
-import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides2;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
 
 @Config
-@TeleOp(name = "teleOpConfig")
-public class TestingOpMode extends LinearOpMode {
+@TeleOp(name = "TeleOp single")
+public class TestingOpModeSingle extends OpMode {
     Robot3 robot2;
     GamePadController g1;
     private long lastLoopFinish = 0;
-    public static boolean usePoluu = true;
+    public static boolean usePoluu = false;
+    MultipleTelemetry telemetry;
 
-    @Override
-    public void runOpMode() throws InterruptedException {
-        Globals.RUNMODE = Perioada.TELEOP;
-        robot2= new Robot3(hardwareMap);
-        g1 = new GamePadController(gamepad1);
-
-        waitForStart();
-
-        while(opModeIsActive()) {
-            g1.update();
-            intakeUpdate();
-            extendoUpdate();
-            outtakeUpdate();
-            robot2.drive.driveFromController(g1);
-            slidesUpdate();
-            updateTelemetry();
-            robot2.update();
-        }
-    }
 
     private void intakeUpdate() {
         if(g1.aOnce()) {
@@ -87,8 +69,14 @@ public class TestingOpMode extends LinearOpMode {
         robot2.slides.updatePower(power);
     }
     private void outtakeUpdate() {
-        if(robot2.outtake.currentState == Outtake2.FourBarState.PRE_INTAKE) {
-            robot2.outtake.currentState = Outtake2.FourBarState.INTAKE_POSITION;
+        if(robot2.outtake.currentState == Outtake2.FourBarState.TRANSFER_IDLE) {
+            if(Globals.NUM_PIXELS == 2 && usePoluu) {
+                robot2.intake.capacPos = Intake2.CapacPos.UP;
+            }
+            robot2.drive.slow_mode = false;
+        }
+        if(robot2.outtake.currentState == Outtake2.FourBarState.OUTTAKE_POSITION) {
+            robot2.intake.capacPos = Intake2.CapacPos.DOWN;
         }
         if(g1.bOnce()) {
             if(robot2.outtake.clawState == Outtake2.ClawState.OPEN) {
@@ -98,25 +86,22 @@ public class TestingOpMode extends LinearOpMode {
             }
         }
         if(g1.yOnce()) {
-            if(robot2.outtake.currentState == Outtake2.FourBarState.INTAKE_POSITION) {
+            if(robot2.outtake.currentState != Outtake2.FourBarState.TRANSFER_IDLE) {
                 robot2.outtake.lastImportant = robot2.outtake.currentState;
                 robot2.outtake.currentState = Outtake2.FourBarState.TRANSFER_IDLE;
+                //robot2.intake.capacPos = Intake2.CapacPos.DOWN; //might not work
 
-            }else if(robot2.outtake.currentState == Outtake2.FourBarState.TRANSFER_IDLE) {
+            }else {
                 if(robot2.outtake.lastImportant == Outtake2.FourBarState.INTAKE_POSITION) {
                     robot2.outtake.lastImportant = robot2.outtake.currentState;
-
+                    robot2.drive.slow_mode = true;
                     robot2.outtake.currentState = Outtake2.FourBarState.OUTTAKE_POSITION;
-                    robot2.intake.capacPos = Intake2.CapacPos.DOWN;
                 }else {
                     robot2.outtake.lastImportant = robot2.outtake.currentState;
                     robot2.outtake.clawState = Outtake2.ClawState.OPEN;
+                    robot2.intake.capacPos = Intake2.CapacPos.UP;
                     robot2.outtake.currentState = Outtake2.FourBarState.INTAKE_POSITION;
                 }
-            }else {
-                robot2.outtake.lastImportant = robot2.outtake.currentState;
-
-                robot2.outtake.currentState = Outtake2.FourBarState.TRANSFER_IDLE;
             }
         }
         if(g1.dpadLeftOnce()) {
@@ -135,8 +120,8 @@ public class TestingOpMode extends LinearOpMode {
         telemetry.addData("speed Motor",robot2.intake.intakeState);
         telemetry.addData("extendoPower",robot2.extendo.getPower());
         telemetry.addData("extendoState",robot2.extendo.extendoState);
-//        telemetry.addData("pixelLeft",robot2.sensors.getLeftDistance());
-//        telemetry.addData("pixelRight",robot2.sensors.getRightDistance());
+        telemetry.addData("pixelLeft",robot2.sensors.getLeftDistance());
+        telemetry.addData("pixelRight",robot2.sensors.getRightDistance());
         telemetry.addData("Pixels",Globals.NUM_PIXELS);
         telemetry.addLine("                     OUTTAKE");
         telemetry.addData("OuttakeState",robot2.outtake.currentState);
@@ -152,5 +137,28 @@ public class TestingOpMode extends LinearOpMode {
         telemetry.addData("Sample Rate (Hz) ",1/((double)(finish - lastLoopFinish)/1000.0));
         lastLoopFinish = finish;
         telemetry.update();
+    }
+
+    @Override
+    public void init() {
+        Globals.RUNMODE = Perioada.TELEOP;
+        robot2= new Robot3(this,false);
+        g1 = new GamePadController(gamepad1);
+        telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
+    }
+
+    @Override
+    public void start() {
+        robot2.start();
+    }
+    @Override
+    public void loop() {
+        g1.update();
+        intakeUpdate();
+        extendoUpdate();
+        slidesUpdate();
+        outtakeUpdate();
+        robot2.drive.driveFromController(g1);
+        updateTelemetry();
     }
 }
