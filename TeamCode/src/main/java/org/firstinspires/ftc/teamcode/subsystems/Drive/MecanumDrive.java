@@ -65,7 +65,7 @@ public final class MecanumDrive implements Subsystem {
 
     double drivingSpeed = 0.8;
 
-    double turnSpeed = 0.5;
+    double turnSpeed = 0.7;
 
     @Override
     public void update() {
@@ -292,14 +292,16 @@ public final class MecanumDrive implements Subsystem {
 
 
 
-        double input_turn = 0;
-        if(gamepad1.rightBumper()) input_turn = 0.5;
-        if(gamepad1.leftBumper()) input_turn = -0.5;
+        double input_turn = Math.pow(-gamepad1.right_stick_x,3);
+//        if(gamepad1.rightBumper()) input_turn = 0.5;
+//        if(gamepad1.leftBumper()) input_turn = -0.5;
 
         if(slow_mode) {
             input_x*=slow_driving;
             input_y*=slow_driving;
-            input_turn=0.3;
+            input_turn*=0.3;
+        }else {
+            input_turn*=turnSpeed;
         }
         Vector2d input = new Vector2d(input_x, input_y);
         input_turn = Range.clip(input_turn, -1, 1);

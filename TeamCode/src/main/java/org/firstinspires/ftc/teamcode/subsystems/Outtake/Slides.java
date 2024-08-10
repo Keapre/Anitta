@@ -9,42 +9,41 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 
-import org.firstinspires.ftc.teamcode.Robot2;
+import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
-import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
-import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
 import org.firstinspires.ftc.teamcode.util.control.EricPid;
 
 @Config
-public class Slides {
+public class Slides implements Subsystem {
 
-    Robot2 robot;
+    Robot robot;
+
     public enum SlidesState {
         MANUAL,
+
         IDLE,
         FIRST_THRESHOLD, //MIN
         SECOND_THREESHOLD, //MID
         THIRD_THREESHOLD, //MAX
     }
 
-    public
-    CachingDcMotorEx sMotor1, sMotor2;
+    public CachingDcMotorEx sMotor1, sMotor2;
     Sensors sensors;
-    public PriorityMotor slideMotor;
 
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
     int indexManualPowers = 0;
 
-    public static double idlePower = 0.01;
+    public static double idlePower = 0.05;
     public static double extendPower = 0.8;
-    public static double retractPower = 0.8;
+    public static double retractPower = -0.8;
     public static double kP = 0, kI = 0, kD = 0;
     public static double kgSlides = 0;
 
@@ -60,45 +59,38 @@ public class Slides {
     public static double ticksToInches = 0.0; //TUNE
     public static double maxSlidesHeight = 27.891; //TUNE
     final EricPid pid;
+    public static double slidePower = 0;
 
     public static double targetPosition = 0;
     public SlidesState slidesState = SlidesState.IDLE;
 
-    public Slides(HardwareMap hardwareMap, HardwareQueue hardwareQueue,Sensors sensors,Robot2 robot) {
+    public Slides(HardwareMap hardwareMap, Sensors sensors, Robot robot) {
         this.sensors = sensors;
-        this.slidesState = SlidesState.IDLE;
-        if (Globals.RUNMODE == Perioada.AUTO) {
-            resetSlidesEncoder();
-        }
-        sMotor1 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "slides1"));
-        sMotor2 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "slides2"));
+        if(Globals.RUNMODE  == Perioada.TELEOP) this.slidesState = SlidesState.MANUAL;
+        sMotor1 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake1")); //2-are encoder
+        sMotor2 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake2"));
 
-        slideMotor = new PriorityMotor(
-                new CachingDcMotorEx[]{sMotor1, sMotor2},
-                "slides",
-                3
-        );
-
-        hardwareQueue.addDevice(slideMotor);
+        resetSlidesEncoder();
         pid = new EricPid(kP, kI, kD);
         this.robot = robot;
     }
 
     void resetSlidesEncoder() {
-        sMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        sMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        sMotor1.setPower(0);
-        sMotor1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        sMotor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-        sMotor2.setPower(0);
-        sMotor2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        targetPosition = 0;
+        sMotor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+
+        sMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         sMotor1.setPower(0);
         sMotor2.setPower(0);
     }
 
 
+    public void updatePower(double power) {
+        slidePower = power;
+    }
     public void firstThreeshold() {
         slidesState = SlidesState.FIRST_THRESHOLD;
         setTargetLength(distancesThreeshold[0]);
@@ -115,17 +107,7 @@ public class Slides {
         setTargetLength(distancesThreeshold[2]);
     }
 
-    public void updateManualPower(GamePadController g1) {
-        if(g1.rightBumper()) {
-            ExtendoPower = extendPower;
-            return;
-        }
-        if(g1.leftBumper()) {
-            ExtendoPower = retractPower;
-            return;
-        }
-        ExtendoPower = idlePower;
-    }
+
 
     public double getLenght() {
         return sensors.getSlidePos() * ticksToInches;
@@ -134,6 +116,7 @@ public class Slides {
     public double getVelocity() {
         return sensors.getSlideVelocity() * ticksToInches;
     }
+
     public void AutoUpdate() { // no feedforward
         lenght = getLength();
         vel = getVelocity();
@@ -141,23 +124,27 @@ public class Slides {
             slidesState = SlidesState.IDLE;
         }
         power = pid.update(lenght) + kgSlides;
-        slideMotor.setTargetPower(power);
+        sMotor2.setPower(power);
+        sMotor1.setPower(power);
     }
 
     public void setTargetPosition(double position) {
         targetPosition = position;
         this.pid.target = targetPosition;
     }
+
     private class TargetPosition implements Action {
 
         double position;
+
         public TargetPosition(double position) {
             this.position = position;
         }
+
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            if(getTargetPosition() != position){
-                 setTargetPosition(position);
+            if (getTargetPosition() != position) {
+                setTargetPosition(position);
             }
             return false;
         }
@@ -174,7 +161,7 @@ public class Slides {
     }
 */
 
-//    public void checkForIntake() {
+    //    public void checkForIntake() {
 //        if(robot.outtake.currentState == Outtake.FourBarState.TRANSFER_INTAKE) {
 //            firstThreeshold();
 //        }else if(robot.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION) {
@@ -182,14 +169,10 @@ public class Slides {
 //        }
 //    }
     public void update() {
-        lenght = sensors.getSlidePos()* ticksToInches; //TODO:USE the sensor class for this
-        vel = sensors.getSlideVelocity()     * ticksToInches;
         switch (slidesState) {
             case MANUAL:
-                slideMotor.setTargetPower(ExtendoPower);
-                break;
-            case IDLE:
-                slideMotor.setTargetPower(0);
+                sMotor2.setPower(slidePower);
+                sMotor1.setPower(slidePower);
                 break;
             case FIRST_THRESHOLD:
                 firstThreeshold();
@@ -212,7 +195,9 @@ public class Slides {
     }
 
     public void forceShutDown() {
-        slideMotor.setPowerForced(0);
+
+        sMotor1.setPower(0);
+        sMotor2.setPower(0);
     }
 
     public double getLength() {
@@ -227,12 +212,14 @@ public class Slides {
         public changeSlideState(SlidesState state) {
             this.state = state;
         }
+
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
             slidesState = state;
             return false;
         }
     }
+
     public Action changeState(SlidesState state) {
         return new changeSlideState(state);
     }

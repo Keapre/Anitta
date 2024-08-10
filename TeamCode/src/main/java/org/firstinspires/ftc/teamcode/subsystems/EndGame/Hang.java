@@ -32,12 +32,12 @@ public class Hang {
     public void update() {
         switch (status) {
             case EXTEND:
-                slides.slideMotor.motor[0].setPower(1);
-                slides.slideMotor.motor[1].setPower(1);
+                slides.sMotor1.setPower(1);
+                slides.sMotor2.setPower(1);
                 break;
             case RETRACT:
-                slides.slideMotor.motor[0].setPower(-1);
-                slides.slideMotor.motor[1].setPower(-1);
+                slides.sMotor1.setPower(-1);
+                slides.sMotor2.setPower(-1);
                 break;
             case IDLE:
                 slides.forceShutDown();

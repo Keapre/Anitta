@@ -1,30 +1,26 @@
 package org.firstinspires.ftc.teamcode.subsystems.Intake;
 
-import androidx.annotation.NonNull;
-
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.SequentialAction;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 
 //import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
-import org.firstinspires.ftc.teamcode.Robot2;
-import org.firstinspires.ftc.teamcode.util.ActionUtil;
+import org.firstinspires.ftc.teamcode.Robot;
+
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
-import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
+import org.firstinspires.ftc.teamcode.util.Perioada;
 import org.firstinspires.ftc.teamcode.util.Utils;
 
 import com.qualcomm.robotcore.hardware.Servo;
 
-public class Intake {
+@Config
+public class Intake implements Subsystem {
 
     public enum TiltState {
         LOW,
@@ -32,8 +28,17 @@ public class Intake {
         STACK2,
         STACK3,
         STACK4,
-        STACK5
+        STACK5;
+
+        public TiltState previous() {
+            return values()[ordinal() - 1];
+        }
+
+        public TiltState next() {
+            return values()[ordinal() + 1];
+        }
     }
+
 
     public enum CapacPos {
         UP,
@@ -41,92 +46,79 @@ public class Intake {
     }
 
     public enum IntakeState {
-        FORWARD,
-        REVERSE,
+        MANUAL,
         REVERSE_SLOW,
         REVERSE_FOR_TIME,
         IDLE
     }
-    final PriorityServo tilt;
+
+    final CachingServo tilt;
     public static boolean findPixels = false;
-    public IntakeUpdate Update;
     public double timeReverse = 0;
+    public boolean debug = false;
 
     public long reverseTimeStart = 0;
 
     public TiltState tiltPos = TiltState.LOW;
     public CapacPos capacPos = CapacPos.DOWN;
-    Robot2 robot2;
+    public double intakeSpeed = 0;
+    Robot robot2;
 
     public IntakeState intakeState = IntakeState.IDLE, lastIntakeState = IntakeState.IDLE;
 
     public static int indexTilt = 0;
-    public double currentTilt = 0,lastTilt = 0;
-    public static double[] tiltPositions = new double[]{0.55, 0.56,0.58,0.6,0.61, 0.7};
+    public static int rotateIndex = 2;
+    public double currentTilt = 0, lastTilt = 0;
+    public static double bestTilt = 0.66;
+    public static double MaxTilt = 0.72;
+    public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.66, 0.68, 0.72};
     public static double[] capacPositions = new double[]{0.7, 0}; // 0 - open ,1 - closed
+    public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
 
-    public static double[] motorSpeed = new double[]{1, -0.6,-0.3, 0.0};
+    final CachingServo capac;
+    public boolean started = false;
 
-    final PriorityServo capac;
+    final CachingDcMotorEx intakeMotor;
 
-    final PriorityMotor intakeMotor;
-
-    public Intake(HardwareMap hardwareMap, HardwareQueue hardwareQueue, Robot2 robot2) {
-        tilt = new PriorityServo(new CachingServo(hardwareMap.get(Servo.class, "tilt")),
-                "intakeTilt",
-                3,
-                PriorityServo.ServoType.AXON_MINI,
-                tiltPositions[0],
-                tiltPositions[0],
-                false
-        );
-        capac = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "capac")),
-                "intakeCapac",
-                2,
-                PriorityServo.ServoType.AXON_MINI,
-                capacPositions[1],
-                capacPositions[1],
-                false
-        );
-        intakeMotor = new PriorityMotor(
-                new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "intake")),
-                "intakeMotor",
-                4
-        );
-        intakeMotor.setPowerForced(0);
-
-        intakeMotor.motor[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intakeMotor.motor[0].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        capacPos = CapacPos.UP;
+    public Intake(HardwareMap hardwareMap, Robot robot2) {
+        findPixels = false;
+        started = false;
+        if(Globals.RUNMODE == Perioada.TELEOP) {
+            intakeState = IntakeState.MANUAL;
+        }
+        tilt = new CachingServo(hardwareMap.get(Servo.class, "tilt"));
+        capac = new CachingServo(hardwareMap.get(Servo.class, "capac"));
+        intakeMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "intakeMotor"));
+        intakeMotor.setPower(0);
+        //intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        capacPos = CapacPos.DOWN;
         tiltPos = TiltState.LOW;
-        intakeState = IntakeState.IDLE;
 
         this.robot2 = robot2;
-        hardwareQueue.addDevice(tilt);
-        hardwareQueue.addDevice(capac);
-        hardwareQueue.addDevice(intakeMotor);
     }
 
+    public void updateIndexTiltLow() {
+        indexTilt = 0;
+    }
+
+    public void updateIndexTiltHigh() {
+        indexTilt = 5;
+    }
+
+    public void resetRotateIndex() {
+        rotateIndex = 2;
+    }
 
     public void update() {
         switch (tiltPos) {
             case LOW:
-                tilt.setPosition(tiltPositions[0]);
-            case STACK2:
-                tilt.setPosition(tiltPositions[1]);
-            case STACK3:
-                tilt.setPosition(tiltPositions[2]);
-            case STACK4:
-                tilt.setPosition(tiltPositions[3]);
-            case STACK5:
-                tilt.setPosition(tiltPositions[4]);
+                tilt.setPosition(bestTilt);
+                break;
             case HIGH:
-                tilt.setPosition(tiltPositions[5]);
-            default:
+                tilt.setPosition(MaxTilt);
                 break;
         }
-
         switch (capacPos) {
             case UP:
                 capac.setPosition(capacPositions[0]);
@@ -139,24 +131,22 @@ public class Intake {
         }
 
         switch (intakeState) {
-            case FORWARD:
-                intakeMotor.setTargetPower(motorSpeed[0]);
-                break;
-            case REVERSE:
-                intakeMotor.setTargetPower(motorSpeed[1]);
-                break;
-            case REVERSE_SLOW:
-                intakeMotor.setTargetPower(motorSpeed[2]);
+            case MANUAL:
+                intakeMotor.setPower(intakeSpeed);
                 break;
             case REVERSE_FOR_TIME:
                 long elapsed = System.currentTimeMillis() - reverseTimeStart;
-                if(elapsed < timeReverse) {
-                    intakeMotor.setTargetPower((motorSpeed[1] + motorSpeed[2]) / 2);
+                if (System.currentTimeMillis() < reverseTimeStart + timeReverse) {
+                    debug = true;
+                    intakeMotor.setPower(motorSpeed[1]);
                 } else {
+                    debug = false;
+                    intakeMotor.setPower(motorSpeed[3]);
                     intakeState = IntakeState.IDLE;
                 }
+                break;
             case IDLE:
-                intakeMotor.setTargetPower(motorSpeed[3]);
+                intakeMotor.setPower(motorSpeed[3]);
                 break;
             default:
                 break;
@@ -164,12 +154,13 @@ public class Intake {
     }
 
 
+    public boolean getDebug() {
+        return debug;
+    }
+
     public void reverseForTime(double time) {
         this.timeReverse = time;
         reverseTimeStart = System.currentTimeMillis();
-        if(intakeState != IntakeState.REVERSE_FOR_TIME) {
-            lastIntakeState = intakeState;
-        }
         intakeState = IntakeState.REVERSE_FOR_TIME;
     }
 
@@ -177,73 +168,108 @@ public class Intake {
     public void intakeOff() {
         intakeState = IntakeState.IDLE;
     }
+
     public void slowReverse() {
         intakeState = IntakeState.REVERSE_SLOW;
     }
-    public void intakeReverse() {
-        intakeState = IntakeState.REVERSE;
-    }
-    public void intakeForward() {
-        intakeState = IntakeState.FORWARD;
-    }
+
+//    public void intakeReverse() {
+//        intakeState = IntakeState.REVERSE;
+//    }
+//
+//    public void intakeForward() {
+//        intakeState = IntakeState.FORWARD;
+//    }
+
     public void intakeForceOff() {
-        intakeMotor.setPowerForced(0);
+        intakeMotor.setPower(0);
         intakeState = IntakeState.IDLE;
     }
+
+    public double reverseTimeStarting = 0;
+
     public void addTilt() {
         indexTilt++;
-        indexTilt = Utils.minMaxClipInt(indexTilt,0,5);
-        tilt.setPosition(tiltPositions[indexTilt]);
+        Utils.minMaxClip(indexTilt,0,5);
     }
+
     public void substractTilt() {
         indexTilt--;
-        indexTilt = Utils.minMaxClipInt(indexTilt,0,5);
-        tilt.setPosition(tiltPositions[indexTilt]);
+        Utils.minMaxClip(indexTilt,0,5);
     }
 
-    public Action setTiltHeight(int setPoint) {
-        return new ActionUtil.ServoPositionAction(tilt,tiltPositions[setPoint]);
+    public int getIndexTilt() {
+        return indexTilt;
     }
+//    public Action setTiltHeight(int setPoint) {
+//        return new ActionUtil.ServoPositionAction(tilt,tiltPositions[setPoint]);
+//    }
 
-    public Action intakeMotor() {
-        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
-    }
+//    public Action intakeMotor() {
+//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
+//    }
 
-    public Action reverseMotor(double t) {
-        return new reverseForTime(t);
-    }
+//    public Action reverseMotor(double t) {
+//        return new reverseForTime(t);
+//    }
 
-    public Action offMotor() {
-        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
-    }
+//    public Action offMotor() {
+//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
+//    }
 
-    public Action capacDeschis() {
-        capacPos = CapacPos.UP;
-        return new ActionUtil.ServoPositionAction(capac,capacPositions[0]);
-    }
+//    public Action capacDeschis() {
+//        capacPos = CapacPos.UP;
+//        return new ActionUtil.ServoPositionAction(capac,capacPositions[0]);
+//    }
 
-    public Action capacInchis() {
-        capacPos = CapacPos.DOWN;
-        return new ActionUtil.ServoPositionAction(capac,capacPositions[1]);
-    }
+//    public Action capacInchis() {
+//        capacPos = CapacPos.DOWN;
+//        return new ActionUtil.ServoPositionAction(capac,capacPositions[1]);
+//    }
 
     public void intakeReverseInstant() {
 
-        intakeMotor.motor[0].setPower(motorSpeed[1]);
+        intakeMotor.setPower(motorSpeed[1]);
     }
 
+    public void updatePower(GamePadController g1) {
+        if(g1.rightBumperOnce()) {
+            if(intakeSpeed != 0) {
+                intakeSpeed = 0;
+            }else {
+                intakeSpeed = 1;
+            }
+        }
+        if(g1.leftBumperOnce()) {
+            if(intakeSpeed != 0) {
+                intakeSpeed = 0;
+            }else {
+                intakeSpeed = -0.8;
+            }
+        }
+    }
     public void LowTilt() {
         tiltPos = TiltState.LOW;
     }
 
     public void checkForPixels(GamePadController g1) {
-        if(Globals.NUM_PIXELS == 2 && !findPixels) {
-            g1.rumble(500);
-            findPixels = true;
-            reverseForTime(1000);
-            capacPos = CapacPos.UP;
+        if (Globals.NUM_PIXELS == 2 && !findPixels) {
+            if (!started) {
+                reverseTimeStarting = System.currentTimeMillis();
+                started = true;
+            } else {
+                if (System.currentTimeMillis() > reverseTimeStarting + 1400) {
+                    g1.rumble(500);
+                    findPixels = true;
+                    reverseForTime(1000);
+                    capacPos = CapacPos.UP;
+                    findPixels = true;
+                }
+            }
+
         }
-        if(Globals.NUM_PIXELS!=2){
+        if (Globals.NUM_PIXELS != 2) {
+            started = false;
             findPixels = false;
         }
     }
@@ -276,7 +302,7 @@ public class Intake {
 //            }
 //
 //            if(jammed) {
-//                if(!intakeMotor.motor[0].isOverCurrent()) {
+//                if(!intakeMotor.isOverCurrent()) {
 //                    this.jammed = false;
 //                    return System.currentTimeMillis() < finalTime;
 //                }
@@ -285,7 +311,7 @@ public class Intake {
 //                    return System.currentTimeMillis() < finalTime;
 //                }
 //            }
-//            if (intakeMotor.motor[0].isOverCurrent()) {
+//            if (intakeMotor.isOverCurrent()) {
 //                this.jammed = true;
 //                return System.currentTimeMillis() < finalTime;
 //            }
@@ -297,59 +323,60 @@ public class Intake {
 //            return System.currentTimeMillis() < finalTime;
 //        }
 //    }
-    private class changeTiltState implements Action {
-
-        TiltState state;
-
-        public changeTiltState(TiltState state) {
-            this.state = state;
-        }
-        @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            tiltPos = state;
-            return false;
-        }
-    }
-    public Action changeState(TiltState state) {
-        return new changeTiltState(state);
-    }
-    private class changeIntakeMotorState implements Action {
-
-        IntakeState state;
-
-        public changeIntakeMotorState(IntakeState state) {
-            this.state = state;
-        }
-        @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            intakeState = state;
-            return false;
-        }
-    }
-    public Action changeintakeState(IntakeState state) {
-        return new changeIntakeMotorState(state);
-    }
-
-    private class reverseForTime implements Action {
-
-        private double finishTime = 0;
-        private boolean first = true;
-
-        public reverseForTime(double t) {
-            finishTime = System.currentTimeMillis() + t;
-        }
-        @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            if(first) {
-                intakeMotor.motor[0].setPower(motorSpeed[1]);
-                first = false;
-            }
-
-            if(System.currentTimeMillis() >= finishTime) {
-                intakeForceOff();
-                return false;
-            }
-            return true;
-        }
-    }
+//    private class changeTiltState implements Action {
+//
+//        TiltState state;
+//
+//        public changeTiltState(TiltState state) {
+//            this.state = state;
+//        }
+//        @Override
+//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//            tiltPos = state;
+//            return false;
+//        }
+//    }
+//    public Action changeState(TiltState state) {
+//        return new changeTiltState(state);
+//    }
+//    private class changeIntakeMotorState implements Action {
+//
+//        IntakeState state;
+//
+//        public changeIntakeMotorState(IntakeState state) {
+//            this.state = state;
+//        }
+//        @Override
+//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//            intakeState = state;
+//            return false;
+//        }
+//    }
+//    public Action changeintakeState(IntakeState state) {
+//        return new changeIntakeMotorState(state);
+//    }
+//
+//    private class reverseForTime implements Action {
+//
+//        private double finishTime = 0;
+//        private boolean first = true;
+//
+//        public reverseForTime(double t) {
+//            finishTime = System.currentTimeMillis() + t;
+//        }
+//        @Override
+//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//            if(first) {
+//                intakeMotor.setPower(motorSpeed[1]);
+//                first = false;
+//            }
+//
+//            if(System.currentTimeMillis() >= finishTime) {
+//                intakeForceOff();
+//                return false;
+//            }
+//            return true;
+//        }
+//    }
+//}
 }
