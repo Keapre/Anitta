@@ -94,6 +94,11 @@ public class Blue2 extends LinearOpMode {
 //        }
 
     }
+    public void getLocation() {
+        Case = robot.sensors.hky.getLocation(false);
+        if(Case == 0) Case = 2;
+        else if(Case == 2) Case = 0;
+    }
 
     void intakeOuttakeMovement() {
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
@@ -112,7 +117,7 @@ public class Blue2 extends LinearOpMode {
         traj = new BlueBackBoard();
         Globals.RUNMODE = Perioada.AUTO;
         Globals.startPose = traj.start;
-        Globals.isRed = true;
+        Globals.isRed = false;
         robot = new Robot(this,true);
 
 
@@ -129,6 +134,7 @@ public class Blue2 extends LinearOpMode {
         if (isStopRequested()) {
             robot.stop();
         }
+        getLocation();
         solvePurplePixel();
     }
 }

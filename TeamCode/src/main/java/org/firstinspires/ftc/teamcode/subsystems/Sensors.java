@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.teamcode.Subsystem;
+import org.firstinspires.ftc.teamcode.subsystems.Vision.Husky;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.TelemetryUtil;
@@ -54,6 +55,7 @@ public class Sensors implements Subsystem {
     public boolean imuJustUpdated = false;
 
     private double huskyUpdateTime = 1400;
+    public Husky hky;
     long lastHuskyLensUpdatedTime = System.currentTimeMillis();
     public boolean huskyJustUpdated = false;
 
@@ -64,6 +66,7 @@ public class Sensors implements Subsystem {
         intakePixelLeft = hardwareMap.get(DigitalChannel.class, "poluluLeft");
         intakePixelRight = hardwareMap.get(DigitalChannel.class, "poluluRight");
 
+        hky = new Husky(hardwareMap);
         intakePixelLeft.setMode(DigitalChannel.Mode.INPUT);
         intakePixelRight.setMode(DigitalChannel.Mode.INPUT);
         //this.robot = robot;

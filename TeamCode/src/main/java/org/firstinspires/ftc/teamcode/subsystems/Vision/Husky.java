@@ -26,20 +26,27 @@ public class Husky{
         blocks = huskyLens.blocks();
     }
 
-    public int getLocation() {
+    public int getLocation(boolean red) {
         updateBlocks();
 
-        int location = 0;
-        int x = blocks[0].x;
-        int y = blocks[0].y;
+        int location = -1;
+        for( HuskyLens.Block blk : blocks) {
+            if(blocks[0].id == 1){
+                int x = blocks[0].x;
+                int y = blocks[0].y;
 
-        if(x <= LEFT_THRESHOLD) {
-            location = 1;
-        }else if(x > LEFT_THRESHOLD && x <= RIGHT_THRESHOLD) {
-            location = 2;
-        }else {
-            location = 3;
+                if(x <= LEFT_THRESHOLD) {
+                    location = 0;
+                }else if(x <= RIGHT_THRESHOLD) {
+                    location = 1;
+                }else {
+                    location = 2;
+                }
+                return location;
+            }
+
         }
+
         return location;
     }
 }

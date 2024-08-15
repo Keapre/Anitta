@@ -84,17 +84,14 @@ public class Slides implements Subsystem {
         return sMotor1.getCurrentPosition();
     }
     void resetSlidesEncoder() {
-        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
-        sMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        sMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        sMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         sMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
         sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         sMotor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+
     }
-    public void updatePower(double power) {
-        this.power = power;
+    public void updatePower(double Dpower) {
+        this.power = Dpower;
 //        Log.w("left Trigger",Double.toString(-g2.left_trigger));
 //        Log.w("right Trigger",Double.toString(g2.right_trigger));
 
@@ -126,6 +123,10 @@ public class Slides implements Subsystem {
         return sensors.getSlideVelocity() * ticksToInches;
     }
 
+    public void setSlidesState(SlidesState sldState) {
+
+        slidesState = sldState;
+    }
     public void AutoUpdate() { // no feedforward
         lenght = getLength();
         vel = getVelocity();

@@ -66,7 +66,13 @@ public class TeleOpDuoRed extends OpMode {
         robot2.extendo.updatePower(power);
     }
     private void slidesUpdate() {
-        robot2.slides.updatePower(g2);
+        if(gamepad2.right_trigger > 0.1) {
+            robot2.slides.updatePower(gamepad2.right_trigger);
+        }else if(gamepad2.left_trigger > 0.1) {
+            robot2.slides.updatePower(-gamepad2.left_trigger);
+        }else {
+            robot2.slides.updatePower(robot2.slides.idlePower);
+        }
     }
     private void outtakeUpdate() {
         robot2.drive.slow_mode = (robot2.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION);

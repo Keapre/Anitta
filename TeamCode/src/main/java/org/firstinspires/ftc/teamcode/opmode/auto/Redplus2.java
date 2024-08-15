@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmode.auto;
 
 import android.util.Log;
+import android.util.Size;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
@@ -13,25 +14,33 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.opmode.auto.trajectories.Center0Red;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
+import org.firstinspires.ftc.teamcode.subsystems.Sensors;
+import org.firstinspires.ftc.teamcode.subsystems.Vision.TeamPropDetectionRed;
 import org.firstinspires.ftc.teamcode.util.AutoActionScheduler;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
+import org.firstinspires.ftc.vision.VisionPortal;
 
 @Config
 @Autonomous(name = "Red 2+0")
 public class Redplus2 extends LinearOpMode {
     public Robot robot;
     Center0Red traj;
-
+    private VisionPortal visionPortalTeamProp;
+    private TeamPropDetectionRed teamPropDetectionRed;
+    int noDetectionFlag = -1;
+    int robotStopFlag = -10; // if robot.stop while camera
+    int teamProp = -1;
 
     AutoActionScheduler scheduler;
     ElapsedTime trajectoryTimer = null;
-    public static int Case = 2; // 0-left,1-mid,2-right
+    public static int Case = 1; // 0-left,1-mid,2-right
     void solvePurplePixel() {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
@@ -93,7 +102,53 @@ public class Redplus2 extends LinearOpMode {
 //        }
 
     }
+    int cameraTeamProp() {
+        int readFromCamera = noDetectionFlag;
 
+        teamPropDetectionRed = new TeamPropDetectionRed();
+
+        telemetry.addData("Webcam 1", "Initing");
+        telemetry.update();
+
+        visionPortalTeamProp = new VisionPortal.Builder()
+                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCameraResolution(new Size(1920, 1080))
+                .addProcessor(teamPropDetectionRed)
+                .enableLiveView(true)
+                .build();
+
+        telemetry.setMsTransmissionInterval(50);
+
+        if (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            telemetry.addData("Webcam 1", "Waiting");
+            telemetry.update();
+            while (!isStopRequested() && (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+                telemetry.addData("Webcam 1", "Waiting");
+                telemetry.addData("State", visionPortalTeamProp.getCameraState());
+                telemetry.update();
+                sleep(50);
+            }
+            telemetry.addData("Webcam 1", "Ready");
+            telemetry.update();
+        }
+        if (isStopRequested()) {
+            robot.stop();
+            return robotStopFlag;
+        }
+
+        while (!isStarted()) {
+            readFromCamera = teamPropDetectionRed.getTeamProp();
+            telemetry.addData("Case", readFromCamera);
+            telemetry.addData("left", teamPropDetectionRed.leftValue());
+            telemetry.addData("cent", teamPropDetectionRed.centreValue());
+            telemetry.addData("thresh", teamPropDetectionRed.threshold);
+            telemetry.update();
+        }
+
+        visionPortalTeamProp.stopStreaming();
+
+        return readFromCamera;
+    }
     void intakeOuttakeMovement() {
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
         robot.sleep(0.3);
@@ -104,7 +159,9 @@ public class Redplus2 extends LinearOpMode {
 
     }
 
-
+    public void getLocation() {
+        Case = robot.sensors.hky.getLocation(true);
+    }
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -117,17 +174,20 @@ public class Redplus2 extends LinearOpMode {
 
         scheduler = new AutoActionScheduler();
         trajectoryTimer = new ElapsedTime();
-        robot.start();
+
         telemetry.addData("is busy",robot.drive.isBusy());
         telemetry.update();
+        Case = cameraTeamProp();
         while (!isStarted()) {
             if (isStopRequested()) {
                 robot.stop();
             }
         }
+        robot.start();
         if (isStopRequested()) {
             robot.stop();
         }
+        getLocation();
         solvePurplePixel();
     }
 }
