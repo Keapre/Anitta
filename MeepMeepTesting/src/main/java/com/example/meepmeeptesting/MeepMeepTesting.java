@@ -32,20 +32,20 @@ public class MeepMeepTesting {
                 .build();
 
         Action scorePreload = myBot.getDrive().actionBuilder(start)
-                .strafeToLinearHeading(new Vector2d(33, 35),Math.toRadians(-180))
-                .strafeTo(new Vector2d(45,45))
+                .strafeToLinearHeading(new Vector2d(11.5, 32),-Math.toRadians(180))
+                .strafeTo(new Vector2d(52.7, 26))
+
 
                 .build();
-        Action goToPixels1 = myBot.getDrive().actionBuilder(new Pose2d(new Vector2d(44,-45),Math.toRadians(180)))
-                .setTangent(Math.toRadians(180))
-                .splineTo(new Vector2d(23,-60),Math.toRadians(180))
-                .splineToConstantHeading(new Vector2d(-24,-60),Math.toRadians(180))
-                .splineToLinearHeading(new Pose2d(-56,-41,Math.toRadians(150)),Math.toRadians(90))
-                .waitSeconds(1)
-                .build();
+//        Action goToPixels1 = myBot.getDrive().actionBuilder(new Pose2d(new Vector2d(44,-45),Math.toRadians(180)))
+//                .setTangent(Math.toRadians(180))
+//                .splineTo(new Vector2d(23,-60),Math.toRadians(180))
+//                .splineToConstantHeading(new Vector2d(-24,-60),Math.toRadians(180))
+//                .splineToLinearHeading(new Pose2d(-56,-41,Math.toRadians(150)),Math.toRadians(90))
+//                .waitSeconds(1)
+//                .build();
         myBot.runAction(new SequentialAction(
-                scorePreload,
-                goToPixels1
+                scorePreload
         ));
         meepMeep.setBackground(MeepMeep.Background.FIELD_CENTERSTAGE_JUICE_DARK)
                 .setDarkMode(true)

@@ -96,6 +96,8 @@ public class Blue2 extends LinearOpMode {
     }
     public void getLocation() {
         Case = robot.sensors.hky.getLocation(false);
+        if(Case == 2) Case = 0;
+        else if(Case == 0) Case = 2;
     }
 
     void intakeOuttakeMovement() {
