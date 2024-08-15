@@ -149,7 +149,7 @@ public class Sensors implements Subsystem {
     public int pixelCounter() {
         int cnt = 0;
         if(!getLeftDistance()) cnt++;
-        if(!getRightDistance()) cnt++;
+        if(getRightDistance()) cnt++;
         Globals.NUM_PIXELS = cnt;
         return cnt;
     }

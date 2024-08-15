@@ -5,13 +5,15 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 
 //FOR THIS U NEED TUNED ODO
-public class WolfPackDrive {
+public class WolfPackDrive implements Subsystem {
     private double speed = 1;
+    private double slow_speed = 0.7;
     public static double TURN_SPEED = 0.75;
-    public static double SLOW_TURN_SPEED = 0.3;
+    public static double SLOW_TURN_SPEED = 0.4;
 
     public boolean SLOW_MODE = false;
     public static double maxVelocityX = 77; // max positive straight velocity. TODO: Record using MaxVelStraightTest.
@@ -141,19 +143,27 @@ public class WolfPackDrive {
 
     public void driveFromController(GamePadController gamepad1) {
 
+        PoseVelocity2d rel = mecanumDrivebase.updatePoseEstimate();
 
+        if(gamepad1.leftStickButtonOnce()){
+            SLOW_MODE = !SLOW_MODE;
+        }
+
+        if(gamepad1.rightStickButtonOnce()) {
+            resetYaw();
+        }
 
         double input_x = Math.pow(-gamepad1.left_stick_y, 3) * speed;
         double input_y = Math.pow(-gamepad1.left_stick_x, 3) * speed;
         Vector2d input = new Vector2d(input_x, input_y);
+        double input_turn = Math.pow(-gamepad1.right_stick_x, 3) * TURN_SPEED; // Turn via right stick
 
-        double input_turn = Math.pow(gamepad1.left_trigger - gamepad1.right_trigger, 3) * TURN_SPEED // Turn via triggers
-                + Math.pow(-gamepad1.right_stick_x, 3) * TURN_SPEED; // Turn via right stick
-        if (gamepad1.leftBumperOnce()) input_turn += SLOW_TURN_SPEED;
-        if (gamepad1.rightBumperOnce()) input_turn -= SLOW_TURN_SPEED;
+        if(SLOW_MODE) {
+            input_turn*=slow_speed;
+        }
         input_turn = Range.clip(input_turn, -1, 1);
 
-        PoseVelocity2d rel = mecanumDrivebase.updatePoseEstimate();
+
         trackPosition(mecanumDrivebase.pose);
         input = mecanumDrivebase.pose.heading.inverse().times(input); // Field centric
 
@@ -298,5 +308,10 @@ public class WolfPackDrive {
 
     public String getWheelPowerString() {
         return String.format("%+1.3f  %+1.3f\n%+1.3f  %+1.3f", mecanumDrivebase.leftFront.getPower(), mecanumDrivebase.rightFront.getPower(), mecanumDrivebase.leftBack.getPower(), mecanumDrivebase.rightBack.getPower());
+    }
+
+    @Override
+    public void update() {
+
     }
 }

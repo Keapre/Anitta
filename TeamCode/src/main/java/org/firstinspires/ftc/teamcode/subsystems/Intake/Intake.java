@@ -1,6 +1,10 @@
 package org.firstinspires.ftc.teamcode.subsystems.Intake;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -10,14 +14,18 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.Robot;
 
 import org.firstinspires.ftc.teamcode.Subsystem;
+import org.firstinspires.ftc.teamcode.util.ActionUtil;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingServoImplEx;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
 import org.firstinspires.ftc.teamcode.util.Utils;
 
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImpl;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 @Config
 public class Intake implements Subsystem {
@@ -47,12 +55,13 @@ public class Intake implements Subsystem {
 
     public enum IntakeState {
         MANUAL,
+        INTAKE_AUTO,
         REVERSE_SLOW,
         REVERSE_FOR_TIME,
         IDLE
     }
 
-    final CachingServo tilt;
+    final CachingServoImplEx tilt;
     public static boolean findPixels = false;
     public double timeReverse = 0;
     public boolean debug = false;
@@ -72,10 +81,10 @@ public class Intake implements Subsystem {
     public static double bestTilt = 0.66;
     public static double MaxTilt = 0.72;
     public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.66, 0.68, 0.72};
-    public static double[] capacPositions = new double[]{0.7, 0}; // 0 - open ,1 - closed
+    public static double[] capacPositions = new double[]{1, 0.43}; // 0 - open ,1 - closed
     public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
 
-    final CachingServo capac;
+    final CachingServoImplEx capac;
     public boolean started = false;
 
     final CachingDcMotorEx intakeMotor;
@@ -86,8 +95,8 @@ public class Intake implements Subsystem {
         if(Globals.RUNMODE == Perioada.TELEOP) {
             intakeState = IntakeState.MANUAL;
         }
-        tilt = new CachingServo(hardwareMap.get(Servo.class, "tilt"));
-        capac = new CachingServo(hardwareMap.get(Servo.class, "capac"));
+        tilt = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "tilt"));
+        capac = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "capac"));
         intakeMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "intakeMotor"));
         intakeMotor.setPower(0);
         //intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
@@ -95,6 +104,10 @@ public class Intake implements Subsystem {
         capacPos = CapacPos.DOWN;
         tiltPos = TiltState.LOW;
 
+        if(Globals.RUNMODE == Perioada.AUTO) {
+            capacPos = CapacPos.UP;
+            tiltPos = TiltState.HIGH;
+        }
         this.robot2 = robot2;
     }
 
@@ -134,6 +147,11 @@ public class Intake implements Subsystem {
             case MANUAL:
                 intakeMotor.setPower(intakeSpeed);
                 break;
+            case INTAKE_AUTO:
+                if(Globals.NUM_PIXELS!=2) intakeMotor.setPower(1);
+                else {
+                    intakeState = IntakeState.REVERSE_FOR_TIME;
+                }
             case REVERSE_FOR_TIME:
                 long elapsed = System.currentTimeMillis() - reverseTimeStart;
                 if (System.currentTimeMillis() < reverseTimeStart + timeReverse) {
@@ -145,6 +163,9 @@ public class Intake implements Subsystem {
                     intakeState = IntakeState.IDLE;
                 }
                 break;
+            case REVERSE_SLOW:
+                intakeMotor.setPower(motorSpeed[1]);
+                break;
             case IDLE:
                 intakeMotor.setPower(motorSpeed[3]);
                 break;
@@ -153,7 +174,10 @@ public class Intake implements Subsystem {
         }
     }
 
-
+    public void hangMode() {
+        capac.setPwmDisable();
+        intakeMotor.close();
+    }
     public boolean getDebug() {
         return debug;
     }
@@ -205,23 +229,23 @@ public class Intake implements Subsystem {
 //        return new ActionUtil.ServoPositionAction(tilt,tiltPositions[setPoint]);
 //    }
 
-//    public Action intakeMotor() {
-//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
-//    }
+    public Action intakeMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[0]);
+    }
 
-//    public Action reverseMotor(double t) {
-//        return new reverseForTime(t);
-//    }
+    public Action reverseMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[1]);
+    }
 
-//    public Action offMotor() {
-//        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
-//    }
+    public Action offMotor() {
+        return new ActionUtil.DcMotorExPowerAction(intakeMotor,motorSpeed[4]);
+    }
 
 //    public Action capacDeschis() {
 //        capacPos = CapacPos.UP;
 //        return new ActionUtil.ServoPositionAction(capac,capacPositions[0]);
 //    }
-
+//
 //    public Action capacInchis() {
 //        capacPos = CapacPos.DOWN;
 //        return new ActionUtil.ServoPositionAction(capac,capacPositions[1]);
@@ -258,11 +282,10 @@ public class Intake implements Subsystem {
                 reverseTimeStarting = System.currentTimeMillis();
                 started = true;
             } else {
-                if (System.currentTimeMillis() > reverseTimeStarting + 1400) {
+                if (System.currentTimeMillis() > reverseTimeStarting + 1000) {
                     g1.rumble(500);
                     findPixels = true;
-                    reverseForTime(1000);
-                    capacPos = CapacPos.UP;
+                    reverseForTime(700);
                     findPixels = true;
                 }
             }
@@ -323,60 +346,60 @@ public class Intake implements Subsystem {
 //            return System.currentTimeMillis() < finalTime;
 //        }
 //    }
-//    private class changeTiltState implements Action {
-//
-//        TiltState state;
-//
-//        public changeTiltState(TiltState state) {
-//            this.state = state;
-//        }
-//        @Override
-//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-//            tiltPos = state;
-//            return false;
-//        }
-//    }
-//    public Action changeState(TiltState state) {
-//        return new changeTiltState(state);
-//    }
-//    private class changeIntakeMotorState implements Action {
-//
-//        IntakeState state;
-//
-//        public changeIntakeMotorState(IntakeState state) {
-//            this.state = state;
-//        }
-//        @Override
-//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-//            intakeState = state;
-//            return false;
-//        }
-//    }
-//    public Action changeintakeState(IntakeState state) {
-//        return new changeIntakeMotorState(state);
-//    }
-//
-//    private class reverseForTime implements Action {
-//
-//        private double finishTime = 0;
-//        private boolean first = true;
-//
-//        public reverseForTime(double t) {
-//            finishTime = System.currentTimeMillis() + t;
-//        }
-//        @Override
-//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-//            if(first) {
-//                intakeMotor.setPower(motorSpeed[1]);
-//                first = false;
-//            }
-//
-//            if(System.currentTimeMillis() >= finishTime) {
-//                intakeForceOff();
-//                return false;
-//            }
-//            return true;
-//        }
-//    }
-//}
+    public Action reverseFortime(double t) {
+        return new reverseForTime(t);
+    }
+    private class changeTiltState implements Action {
+
+        TiltState state;
+
+        public changeTiltState(TiltState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            tiltPos = state;
+            return false;
+        }
+    }
+    public Action changeState(TiltState state) {
+        return new changeTiltState(state);
+    }
+    private class changeIntakeMotorState implements Action {
+
+        IntakeState state;
+
+        public changeIntakeMotorState(IntakeState state) {
+            this.state = state;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            intakeState = state;
+            return false;
+        }
+    }
+    public Action changeintakeState(IntakeState state) {
+        return new changeIntakeMotorState(state);
+    }
+
+    private class reverseForTime implements Action {
+
+        private double finishTime = 0;
+        private boolean first = true;
+
+        public reverseForTime(double t) {
+            finishTime = System.currentTimeMillis() + t;
+        }
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            intakeMotor.setPower(motorSpeed[1]);
+            first = false;
+
+            if(System.currentTimeMillis() >= finishTime) {
+                intakeForceOff();
+                return false;
+            }
+            return true;
+        }
+    }
 }

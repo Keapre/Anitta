@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.util.GamePadController;
+import org.firstinspires.ftc.teamcode.util.control.EricPid;
 
 @Config
 @TeleOp(name = "Elevator State")
@@ -29,6 +30,10 @@ public class ElevatorTest extends LinearOpMode {
 
     public static double retractPower = -1;
 
+    public static double targetLength = 0;
+    public static double currentLength = 0;
+    public static double kP = 0,kI= 0,kD = 0;
+    public EricPid pid;
     @Override
     public void runOpMode() throws InterruptedException {
         elevatorMotor1 = hardwareMap.get(DcMotorEx.class, "outtake1");
@@ -39,18 +44,18 @@ public class ElevatorTest extends LinearOpMode {
 
         double power = 0;
         initiliazeMotor();
+        pid = new EricPid(kP,kI,kD);
 
         while(opModeIsActive()) {
             g1.update();
-            if(g1.xOnce()) {
-                if(elevatorState == ElevatorState.EXTEND) {
+            if(g1.rightBumperOnce()) {
+                if(elevatorState == ElevatorState.EXTEND){
                     elevatorState = ElevatorState.IDLE;
                 }else {
                     elevatorState = ElevatorState.EXTEND;
                 }
             }
-
-            if(g1.yOnce()) {
+            if (g1.leftBumperOnce()) {
                 if(elevatorState == ElevatorState.RETRACT) {
                     elevatorState = ElevatorState.IDLE;
                 }else {
@@ -58,37 +63,40 @@ public class ElevatorTest extends LinearOpMode {
                 }
             }
             update();
-            telemetry.addData("Elevator State", elevatorState);
-            telemetry.update();
+
         }
     }
 
     void initiliazeMotor() {
-        elevatorMotor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-        elevatorMotor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-
         elevatorMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
         elevatorMotor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         elevatorMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-
-        elevatorMotor1.setPower(0);
-        elevatorMotor2.setPower(0);
     }
 
     void update() {
-        switch (elevatorState) {
+//        updatePid();
+//        currentLength = elevatorMotor1.getCurrentPosition();
+//        pid.setTarget(targetLength);
+//        double power = pid.update(currentLength) + idlePower;
+//        elevatorMotor2.setPower(power);
+//        elevatorMotor1.setPower(power);
+        switch (elevatorState){
             case EXTEND:
-                elevatorMotor1.setPower(elevatorPower);
-                elevatorMotor2.setPower(elevatorPower);
-                break;
-            case IDLE:
-                elevatorMotor1.setPower(0);
-                elevatorMotor2.setPower(0);
+                elevatorMotor1.setPower(1);
+                elevatorMotor2.setPower(1);
                 break;
             case RETRACT:
-                elevatorMotor1.setPower(retractPower);
-                elevatorMotor2.setPower(retractPower);
+                elevatorMotor1.setPower(-1);
+                elevatorMotor2.setPower(-1);
+                break;
+            case IDLE:
+                elevatorMotor1.setPower(idlePower);
+                elevatorMotor2.setPower(idlePower);
                 break;
         }
+    }
+
+    void updatePid() {
+        pid.updatePid(kP,kI,kD);
     }
 }

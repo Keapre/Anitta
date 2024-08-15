@@ -3,10 +3,13 @@ package org.firstinspires.ftc.teamcode.subsystems.Intake;
 import static java.lang.Math.abs;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.arcrobotics.ftclib.controller.PIDFController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
 
 import org.firstinspires.ftc.teamcode.Robot;
 
@@ -21,13 +24,16 @@ import org.firstinspires.ftc.teamcode.util.control.EricPid;
 @Config
 public class Extendo implements Subsystem {
     public enum ExtendoState {
-        EXTEND,
-        RETRACT,
-        IDLE,
-        RETRACT_INTAKE,
-        FIRST_THRESHOLD, //MIN
-        SECOND_THREESHOLD, //MID
-        THIRD_THREESHOLD, //MAX
+        IDLE(0.07),
+        MIN(0), //MIN
+
+        MANUAL(0),
+        MAX(2200); //MAX
+
+        public double target;
+        ExtendoState(double tg){
+            this.target = tg;
+        }
     }
 
     CachingDcMotorEx eMotor;
@@ -40,65 +46,72 @@ public class Extendo implements Subsystem {
     public static double extendoPower = 0.0;
     int indexManualPowers = 0;
 
-    public static double kP = 0, kI = 0, kD = 0;
+    public static double kP = 0.0395,kI = 0.002,kD = 0.001;
 
-    double[] distancesThreeshold = new double[]{0, 0, 0}; //TODO: TUNE
-    public static double lenght = 0;
+    double[] distancesThreeshold = new double[]{0, 2200, 0}; //TODO: TUNE
+    public static double encoderValue = 0;
 
     Robot robot;
     double vel = 0;
     double power = 0;
 
-    public static double targetLength = 0;
+
+
+    public ExtendoState extendoState = ExtendoState.MIN;
 
     public static double kg = 0;
     public static double ExtendoPower = 0;
     public static double ticksToInches = 0.0; //TUNE
-    public static double maxSlidesHeight = 27.891; //TUNE
-    final EricPid pid;
+    public static double maxSlidesHeight = 800; //TUNE
+    final PIDController pid;
+    public static PIDCoefficients coef = new PIDCoefficients(kP, kI, kD);
+
+
 
     public static double targetPosition = 0;
-    public ExtendoState extendoState = ExtendoState.IDLE;
+    public int defaultEncoderValue = 0;
 
     public Extendo(HardwareMap hardwareMap, Sensors sensors, Robot robot) {
         this.sensors = sensors;
+        this.pid = new PIDController(coef.p,coef.i,coef.d);
         this.extendoState = ExtendoState.IDLE;
-
-        if(Globals.RUNMODE == Perioada.TELEOP) {
-            extendoState = ExtendoState.IDLE;
-        }
         eMotor = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "extendo"));
 
         resetSlidesEncoder();
+        defaultEncoderValue = eMotor.getTargetPosition();
         this.robot = robot;
-        pid = new EricPid(kP, kI, kD);
     }
     public double getPower() {
         return extendoPower;
     }
+    public int getEnoder() {
+        return eMotor.getCurrentPosition() - defaultEncoderValue;
+    }
     void resetSlidesEncoder() {
-        eMotor.setPower(0);
-//        extendoMotor.motor[0].setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         eMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         eMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        targetPosition = 0;
 
     }
 
+    public void hangMode() {
+        eMotor.close();
+    }
     public void updatePower(double Power) {
-        this.extendoPower = Power;
-    }
-
-    public void AutoUpdate() {
-        lenght = sensors.getExtendoPos()* ticksToInches; //TODO:USE the sensor class for this
-        vel = sensors.getExtendoVelocity() * ticksToInches;
-        if (abs(lenght - targetLength) < 0.5) {
+        extendoState = ExtendoState.MANUAL;
+        extendoPower = Power;
+        if(Power == 0) {
             extendoState = ExtendoState.IDLE;
         }
-        power = pid.update(lenght) + kg;
+    }
 
+
+    void autoUpdate() {
+        pid.setSetPoint(extendoState.target);
+        encoderValue = eMotor.getCurrentPosition();
+        double power = pid.calculate(encoderValue);
         eMotor.setPower(power);
     }
+
     public void updateManualPower(GamePadController g1) {
 
         if (g1.rightBumperOnce()) {
@@ -118,46 +131,31 @@ public class Extendo implements Subsystem {
         }
     }
     public void update() {
-        lenght = sensors.getExtendoPos()* ticksToInches; //TODO:USE the sensor class for this
-        vel = sensors.getExtendoVelocity() * ticksToInches;
+
         switch (extendoState) {
-            case EXTEND:
-                eMotor.setPower(1);
-                break;
-            case RETRACT:
-                eMotor.setPower(retractPower);
-                break;
-            case RETRACT_INTAKE:
-                eMotor.setPower(-0.3);
-                break;
             case IDLE:
-                eMotor.setPower(-0.125);
+                eMotor.setPower(-extendoState.target);
                 break;
-            case FIRST_THRESHOLD:
+            case MANUAL:
+                eMotor.setPower(extendoPower);
+                break;
+            case MIN:
                 setTargetLength(distancesThreeshold[0]);
-                AutoUpdate();
+                autoUpdate();
                 break;
-            case SECOND_THREESHOLD:
+            case MAX:
                 setTargetLength(distancesThreeshold[1]);
-                AutoUpdate();
-                break;
-            case THIRD_THREESHOLD:
-                setTargetLength(distancesThreeshold[2]);
-                AutoUpdate();
+                autoUpdate();
                 break;
         }
     }
 
     public void setTargetLength(double targetLength) {
-        this.targetLength = Math.max(Math.min(targetLength, maxSlidesHeight), 0);
-        pid.setTarget(targetLength);
+        pid.setSetPoint(targetLength);
     }
 
     public void forceShutDown() {
         eMotor.setPower(0);
     }
 
-    public double getLength() {
-        return lenght;
-    }
 }

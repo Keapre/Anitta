@@ -1,41 +1,41 @@
 package org.firstinspires.ftc.teamcode.subsystems.EndGame;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 
+import org.firstinspires.ftc.teamcode.Subsystem;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingServoImplEx;
 import org.firstinspires.ftc.teamcode.util.Priority.HardwareQueue;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityDevice;
 import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
 
-public class Plane {
+@Config
+public class Plane implements Subsystem {
     public enum status {
         IN,
         OUT
     }
-    PriorityServo plane;
+    CachingServoImplEx plane;
     public status Status;
     double powerPosition = 0.69; //TODO:change this value
 
-    double[] positions = new double[]{0.10,0.69};
+    public static double[] positions = new double[]{0.60,0.10};
     double close = 0.10;
-    public Plane(HardwareMap hardwareMap, HardwareQueue hardwareQueue){
-        this.plane = new PriorityServo(
-                new CachingServo(hardwareMap.get(Servo.class, "plane")),
-                "plane",
-                3,
-                PriorityServo.ServoType.AXON_MINI,
-                positions[0],
-                positions[0],
-                false
-        );
+    public Plane(HardwareMap hardwareMap){
+        this.plane =
+                new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "plane"));
         this.plane.setPosition(positions[0]);
         this.Status = status.IN;
-        hardwareQueue.addDevice(plane);
     }
 
+    public void hangMode() {
+        this.plane.setPwmDisable();
+    }
 
     public void setOut() {
         this.Status = status.OUT;

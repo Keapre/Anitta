@@ -1,62 +1,59 @@
 package org.firstinspires.ftc.teamcode.util;
 
-import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityMotor;
-import org.firstinspires.ftc.teamcode.util.Priority.PriorityServo;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 
 import java.util.concurrent.Callable;
 
 public class ActionUtil {
     public static class DcMotorExPowerAction implements Action {
         double power;
-        PriorityMotor motor;
+        CachingDcMotorEx motor;
 
-        public DcMotorExPowerAction(PriorityMotor motor, double power) {
+        public DcMotorExPowerAction(CachingDcMotorEx motor, double power) {
             this.power = power;
             this.motor = motor;
         }
 
         @Override
         public boolean run(TelemetryPacket packet) {
-            motor.motor[0].setPower(power);
+            motor.setPower(power);
             return false;
         }
     }
 
-    public static class RunnableAction implements Action {
-        Callable<Boolean> action;
-
-        public RunnableAction(Callable<Boolean> action) {
-            this.action = action;
-        }
-
-        @Override
-        public boolean run(TelemetryPacket packet) {
-            try {
-                return action.call();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+//    public static class RunnableAction implements Action {
+//        Callable<Boolean> action;
+//
+//        public RunnableAction(boolean action) {
+//            this.action = action;
+//        }
+//
+//        @Override
+//        public boolean run(TelemetryPacket packet) {
+//            try {
+//                return action.call();
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 
     public static class ServoPositionAction implements Action {
         double position;
-        PriorityServo servo;
+        CachingServo servo;
 
-        public ServoPositionAction(PriorityServo servo, double position) {
+        public ServoPositionAction(CachingServo servo, double position) {
             this.servo = servo;
             this.position = position;
         }
 
         @Override
         public boolean run(TelemetryPacket packet) {
-            servo.servo[0].setPosition(position);
+            servo.setPosition(position);
             return false;
         }
     }

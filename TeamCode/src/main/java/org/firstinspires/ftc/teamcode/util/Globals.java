@@ -2,13 +2,14 @@ package org.firstinspires.ftc.teamcode.util;
 
 import com.acmerobotics.dashboard.config.Config;
 
-;
+import com.acmerobotics.roadrunner.Pose2d;
 
 @Config
 public class Globals {
     // general
     public static long LOOP_START = System.nanoTime();
     public static double LOOP_TIME = 0.0;
+    public static  Pose2d startPose;
     public static Perioada RUNMODE = Perioada.TESTING;
     public static boolean isRed = false;
     public static long autoStartTime = -1;

@@ -12,10 +12,9 @@ public class AutoActionScheduler {
     final Queue<Action> actions = new LinkedList<>();
     final FtcDashboard dash = FtcDashboard.getInstance();
     final Canvas canvas = new Canvas();
-    final Runnable pidUpdate;
 
-    public AutoActionScheduler(Runnable pidUpdate) {
-        this.pidUpdate = pidUpdate;
+    public AutoActionScheduler() {
+
     }
 
     public void addAction(Action action) {
@@ -27,7 +26,6 @@ public class AutoActionScheduler {
             TelemetryPacket packet = new TelemetryPacket();
             packet.fieldOverlay().getOperations().addAll(canvas.getOperations());
 
-            pidUpdate.run();
 
             boolean running = actions.peek().run(packet);
             dash.sendTelemetryPacket(packet);

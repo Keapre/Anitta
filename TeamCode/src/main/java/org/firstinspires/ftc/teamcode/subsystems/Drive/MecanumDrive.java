@@ -43,14 +43,16 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.Subsystem;
+import org.firstinspires.ftc.teamcode.rr.Drawing;
 import org.firstinspires.ftc.teamcode.rr.Localizer;
 import org.firstinspires.ftc.teamcode.rr.TwoDeadWheelLocalizer;
 import org.firstinspires.ftc.teamcode.rr.messages.DriveCommandMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.MecanumCommandMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.MecanumLocalizerInputsMessage;
 import org.firstinspires.ftc.teamcode.rr.messages.PoseMessage;
-import org.firstinspires.ftc.teamcode.rr.Drawing;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
+import org.firstinspires.ftc.teamcode.util.Globals;
+import org.firstinspires.ftc.teamcode.util.Perioada;
 
 import java.lang.Math;
 import java.util.Arrays;
@@ -69,7 +71,7 @@ public final class MecanumDrive implements Subsystem {
 
     @Override
     public void update() {
-        this.updatePoseEstimate();
+        //robotVelRobot = updatePoseEstimate();
     }
 
     public static class Params {
@@ -82,14 +84,14 @@ public final class MecanumDrive implements Subsystem {
                 RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         // drive model parameters
-        public double inPerTick = 1;
-        public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 0;
+        public double inPerTick = 0.00289189078;//0.00747816857
+        public double lateralInPerTick = 0.0015769389935187314;
+        public double trackWidthTicks = 4235.092626121127;
 
         // feedforward parameters (in tick units)
-        public double kS = 0;
-        public double kV = 0;
-        public double kA = 0;
+        public double kS = 1.5480508192776816;
+        public double kV = 0.00038413838470217007;
+        public double kA = 0.0001;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 50;
@@ -101,13 +103,13 @@ public final class MecanumDrive implements Subsystem {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 0.0;
-        public double lateralGain = 0.0;
-        public double headingGain = 0.0; // shared with turn
+        public double axialGain = 7;
+        public double lateralGain = 8;
+        public double headingGain = 11.0; // shared with turn
 
-        public double axialVelGain = 0.0;
-        public double lateralVelGain = 0.0;
-        public double headingVelGain = 0.0; // shared with turn
+        public double axialVelGain = 0;
+        public double lateralVelGain = 0;
+        public double headingVelGain = 0.1; // shared with turn
     }
 
     public static Params PARAMS = new Params();
@@ -130,6 +132,7 @@ public final class MecanumDrive implements Subsystem {
     public final VoltageSensor voltageSensor;
 
     public final LazyImu lazyImu;
+    public boolean turnAction = false,moveAction = false;
 
     public final Localizer localizer;
     public Pose2d pose;
@@ -227,7 +230,7 @@ public final class MecanumDrive implements Subsystem {
 
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
         this.pose = pose;
-
+        if(Globals.RUNMODE == Perioada.AUTO) pose = Globals.startPose;
         LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
@@ -247,8 +250,8 @@ public final class MecanumDrive implements Subsystem {
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // TODO: reverse motor directions if needed
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
@@ -257,26 +260,14 @@ public final class MecanumDrive implements Subsystem {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new TwoDeadWheelLocalizer(hardwareMap,lazyImu.get(), PARAMS.inPerTick);
+        localizer = new TwoDeadWheelLocalizer(hardwareMap,this.lazyImu.get(), PARAMS.inPerTick);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
 
-    public void setDrivePowers(PoseVelocity2d powers) {
-        MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
-                PoseVelocity2dDual.constant(powers, 1));
-
-        double maxPowerMag = 1;
-        for (DualNum<Time> power : wheelVels.all()) {
-            maxPowerMag = Math.max(maxPowerMag, power.value());
-        }
-
-        leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);
-        leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
-        rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
-        rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
+    public boolean isBusy() {
+        return (moveAction || turnAction);
     }
-
     public void driveFromController(GamePadController gamepad1) {
 
         if(gamepad1.leftStickButtonOnce()){
@@ -291,23 +282,38 @@ public final class MecanumDrive implements Subsystem {
         double input_y = Math.pow(-gamepad1.left_stick_x, 3);
 
 
-
-        double input_turn = Math.pow(-gamepad1.right_stick_x,3);
-//        if(gamepad1.rightBumper()) input_turn = 0.5;
-//        if(gamepad1.leftBumper()) input_turn = -0.5;
+        double input_turn = Math.pow(-gamepad1.right_stick_x, 3);
 
         if(slow_mode) {
             input_x*=slow_driving;
             input_y*=slow_driving;
-            input_turn*=0.3;
+            input_turn*=slow_turnSpeed;
         }else {
+            input_x*=drivingSpeed;
+            input_y*=drivingSpeed;
             input_turn*=turnSpeed;
         }
+        PoseVelocity2d rel = updatePoseEstimate();
         Vector2d input = new Vector2d(input_x, input_y);
         input_turn = Range.clip(input_turn, -1, 1);
+
         input = this.pose.heading.inverse().times(input); //field centric
 
         setDrivePowers(new PoseVelocity2d(input,input_turn));
+    }
+    public void setDrivePowers(PoseVelocity2d powers) {
+        MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
+                PoseVelocity2dDual.constant(powers, 1));
+
+        double maxPowerMag = 1;
+        for (DualNum<Time> power : wheelVels.all()) {
+            maxPowerMag = Math.max(maxPowerMag, power.value());
+        }
+
+        leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);
+        leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
+        rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
+        rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
     public final class FollowTrajectoryAction implements Action {
@@ -346,7 +352,7 @@ public final class MecanumDrive implements Subsystem {
                 leftBack.setPower(0);
                 rightBack.setPower(0);
                 rightFront.setPower(0);
-
+                moveAction = false;
                 return false;
             }
 
@@ -402,7 +408,7 @@ public final class MecanumDrive implements Subsystem {
             c.setStroke("#4CAF50FF");
             c.setStrokeWidth(1);
             c.strokePolyline(xPoints, yPoints);
-
+            moveAction = true;
             return true;
         }
 
@@ -438,7 +444,7 @@ public final class MecanumDrive implements Subsystem {
                 leftBack.setPower(0);
                 rightBack.setPower(0);
                 rightFront.setPower(0);
-
+                turnAction = false;
                 return false;
             }
 
@@ -446,7 +452,6 @@ public final class MecanumDrive implements Subsystem {
             targetPoseWriter.write(new PoseMessage(txWorldTarget.value()));
 
             PoseVelocity2d robotVelRobot = updatePoseEstimate();
-
             PoseVelocity2dDual<Time> command = new HolonomicController(
                     PARAMS.axialGain, PARAMS.lateralGain, PARAMS.headingGain,
                     PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
@@ -482,7 +487,7 @@ public final class MecanumDrive implements Subsystem {
 
             c.setStroke("#7C4DFFFF");
             c.fillCircle(turn.beginPose.position.x, turn.beginPose.position.y, 2);
-
+            turnAction = true;
             return true;
         }
 
@@ -522,6 +527,12 @@ public final class MecanumDrive implements Subsystem {
         c.setStrokeWidth(1);
         c.setStroke("#3F51B5");
         c.strokePolyline(xPoints, yPoints);
+    }
+    public void hangMode() {
+        leftFront.setMotorDisable();
+        rightFront.setMotorDisable();
+        leftBack.setMotorDisable();
+        rightBack.setMotorDisable();
     }
 
     public TrajectoryActionBuilder actionBuilder(Pose2d beginPose) {

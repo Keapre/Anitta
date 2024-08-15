@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems.Outtake;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.pow;
+
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -15,8 +18,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.Subsystem;
+import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingDcMotorEx;
+import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Perioada;
 import org.firstinspires.ftc.teamcode.util.control.EricPid;
@@ -28,20 +33,21 @@ public class Slides implements Subsystem {
 
     public enum SlidesState {
         MANUAL,
-
+        EXTEND,
+        RETRACT,
         IDLE,
         FIRST_THRESHOLD, //MIN
         SECOND_THREESHOLD, //MID
         THIRD_THREESHOLD, //MAX
     }
 
-    public CachingDcMotorEx sMotor1, sMotor2;
+    public DcMotorEx sMotor1, sMotor2;
     Sensors sensors;
 
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
     int indexManualPowers = 0;
 
-    public static double idlePower = 0.05;
+    public double idlePower = 0.01;
     public static double extendPower = 0.8;
     public static double retractPower = -0.8;
     public static double kP = 0, kI = 0, kD = 0;
@@ -49,48 +55,51 @@ public class Slides implements Subsystem {
 
     public static double ExtendoPower = 0;
 
-    double[] distancesThreeshold = new double[]{0, 0, 0}; //TODO: TUNE
+    double[] distancesThreeshold = new double[]{0, 1000, 1800}; //TODO: TUNE
     public static double lenght = 0;
 
     double vel = 0;
-    double power = 0;
+    public double power = 0;
 
     public static double targetLength = 0;
     public static double ticksToInches = 0.0; //TUNE
-    public static double maxSlidesHeight = 27.891; //TUNE
+    public static double maxSlidesHeight = 1950; //TUNE
     final EricPid pid;
     public static double slidePower = 0;
 
     public static double targetPosition = 0;
-    public SlidesState slidesState = SlidesState.IDLE;
+    public SlidesState slidesState = SlidesState.MANUAL;
 
     public Slides(HardwareMap hardwareMap, Sensors sensors, Robot robot) {
         this.sensors = sensors;
-        if(Globals.RUNMODE  == Perioada.TELEOP) this.slidesState = SlidesState.MANUAL;
-        sMotor1 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake1")); //2-are encoder
-        sMotor2 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake2"));
+        sMotor1 =  hardwareMap.get(DcMotorEx.class, "outtake1"); //2-are encoder
+        sMotor2 = hardwareMap.get(DcMotorEx.class, "outtake2");
 
         resetSlidesEncoder();
         pid = new EricPid(kP, kI, kD);
         this.robot = robot;
     }
 
+    public int getEncoder() {
+        return sMotor1.getCurrentPosition();
+    }
     void resetSlidesEncoder() {
-        sMotor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-
-        sMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
-        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        sMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        sMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        sMotor1.setPower(0);
-        sMotor2.setPower(0);
+        sMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        sMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        sMotor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
     }
-
-
     public void updatePower(double power) {
-        slidePower = power;
+        this.power = power;
+//        Log.w("left Trigger",Double.toString(-g2.left_trigger));
+//        Log.w("right Trigger",Double.toString(g2.right_trigger));
+
     }
+
     public void firstThreeshold() {
         slidesState = SlidesState.FIRST_THRESHOLD;
         setTargetLength(distancesThreeshold[0]);
@@ -171,8 +180,14 @@ public class Slides implements Subsystem {
     public void update() {
         switch (slidesState) {
             case MANUAL:
-                sMotor2.setPower(slidePower);
-                sMotor1.setPower(slidePower);
+                sMotor1.setPower(power);
+                sMotor2.setPower(power);
+                Log.w("slides", Double.toString(power));
+                break;
+            case IDLE:
+                sMotor2.setPower(idlePower);
+                sMotor1.setPower(idlePower);
+//                Log.w("slides", "nigger");
                 break;
             case FIRST_THRESHOLD:
                 firstThreeshold();
@@ -187,6 +202,8 @@ public class Slides implements Subsystem {
                 AutoUpdate();
                 break;
         }
+//        sMotor1.setPower(1);
+//        sMotor2.setPower(1);
     }
 
     public void setTargetLength(double targetLength) {

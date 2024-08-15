@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigu
 public class  CachingDcMotor implements DcMotor {
 
     private DcMotor delegate;
+
     private double cachedPower = -10;
 
     public CachingDcMotor(DcMotor dcMotor) {

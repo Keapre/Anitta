@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems.Outtake;
 
+import android.provider.Settings;
+
 import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.config.Config;
@@ -7,10 +9,14 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.Subsystem;
+import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
+import org.firstinspires.ftc.teamcode.util.Caching.CachingServoImplEx;
 import org.firstinspires.ftc.teamcode.util.Globals;
 import org.firstinspires.ftc.teamcode.util.Utils;
 
@@ -23,17 +29,46 @@ public class Outtake implements Subsystem {
         CHANGING_ROTATE,
         TRANSFER_IDLE,
         INTAKE_POSITION,
-        PRE_INTAKE,
+
+        INTAKE_OUTTAKE,
+        TRANSFER_AUTO,
         OUTTAKE_POSITION,
     }
 
     public enum ROTATESTATE {
-        DEFAULT,
-        LEFT90,
-        LEFt45,
+        //previous, current, next
 
-        RIGHT45,
-        RIGHT90
+        LEFT90(left90){
+            @Override
+            public ROTATESTATE previous() {
+                return this;
+            }
+        },
+        LEFT45(left45),
+        DEFAULT(defaultRotate),
+        RIGHT45(right45),
+
+
+        RIGHT90(right90){
+            @Override
+            public ROTATESTATE next() {
+                return this;
+            }
+        };
+
+        public final double pos;
+
+        ROTATESTATE(double pos) {
+            this.pos = pos;
+        }
+
+        public ROTATESTATE previous() {
+            return values()[ordinal() - 1];
+        }
+
+        public ROTATESTATE next() {
+            return values()[ordinal() + 1];
+        }
     }
 
     public enum ClawState {
@@ -47,45 +82,56 @@ public class Outtake implements Subsystem {
         RIGHT_OPEN
     }
 
+    public static double[] rotateValues = new double[]{0.85, 0.7, 0.56, 0.41,0.26};
 
+    public static double defaultRotate = 0.56;
+    public static double left45 = 0.7;
+    public static double right45 = 0.41;
+    public static double left90 = 0.85;
+    public static double right90 = 0.26;
     boolean busy = false;
 
     public static double releaseTime = 250;
     public static double timer = 0;
     public FourBarState currentState = FourBarState.IDLE;
+
+    public long lastintakeAuto = -1;
     public FourBarState lastImportant = FourBarState.OUTTAKE_POSITION;
 
     public ClawState clawState = ClawState.OPEN;
-    public final CachingServo clawLeft, clawRight;
-    public final CachingServo rotateServo;
+    public final CachingServoImplEx clawLeft, clawRight;
+    public final CachingServoImplEx rotateServo;
 
-    public final CachingServo outtakebar;
+    public final CachingServoImplEx outtakebar;
 
     public  boolean dropLeftPixel = false;
     public  boolean dropRightPixel = false;
-    public final CachingServo servoArmLeft, servoArmRight;
+    public final CachingServoImplEx servoArmLeft, servoArmRight;
 
     Robot robot;
     public double defaultRotatePos = 0.56;
     public double currentRotatePos = defaultRotatePos;
 
-    public static double[] rotateValues = new double[]{0.85, 0.7, 0.56, 0.41,0.26};
+
     public static int rotateIndex = 2;
     public static double defaultOuttakeBarPos = 0.14;
     public static double defaultArmLeft = 0.3;
     public static double defaultArmRight = 0.7;
+    long lastTransferTime = -1;
     public static double intakeArmRight = 0.85;
     public static double intakeArmLeft = 0.15;
-    public static double intakeTilt = 0.16;
+    public static double intakeTilt = 0.14;
 
-    ROTATESTATE rotateState = ROTATESTATE.DEFAULT;
+    public ROTATESTATE rotateState = ROTATESTATE.DEFAULT;
     public static double preIntakeArmLeft = 0.19;
+
+    public static double capacTransferTimer = -1;
     public static double prePreIntakeArmRight = 0.81;
     public static double preIntakeTilt = 0.20;
-    public double clawLeftOpen = 0.01;
-    public double clawRightOpen = 0.02;
-    public static double clawLeftClosed = 0.22;
-    public static double clawRightClosed = 0.21;
+    public static double clawLeftClosed = 0;
+    public static double clawRightClosed = 0.1;
+    public static double clawLeftOpen = 0.3;
+    public static double clawRightOpen = 0.35;
 
 
     public static double scoringOuttakeBarPose = 0.80;
@@ -95,17 +141,18 @@ public class Outtake implements Subsystem {
 
 
     public Outtake(HardwareMap hardwareMap, Robot robot) {
-        clawLeft = new CachingServo(hardwareMap.get(Servo.class, "clawLeft"));
-        clawRight = new CachingServo(hardwareMap.get(Servo.class, "clawRight"));
-        rotateServo = new CachingServo(hardwareMap.get(Servo.class, "rotateOuttake"));
+        clawLeft = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "clawLeft"));
+        clawRight = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "clawRight"));
+        rotateServo = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "rotateOuttake"));
 
-        outtakebar = new CachingServo(hardwareMap.get(Servo.class, "tiltOuttake"));
-        servoArmLeft = new CachingServo(hardwareMap.get(Servo.class, "leftServo"));
+        outtakebar = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "tiltOuttake"));
+        servoArmLeft = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "leftServo"));
 
-        servoArmRight = new CachingServo(hardwareMap.get(Servo.class, "rightServo"));
+        servoArmRight = new CachingServoImplEx(hardwareMap.get(ServoImplEx.class, "rightServo"));
 
         currentState = FourBarState.TRANSFER_IDLE;
-        clawState = ClawState.OPEN;
+        clawState = ClawState.CLOSE;
+        rotateState = ROTATESTATE.DEFAULT;
         this.robot = robot;
     }
 
@@ -126,17 +173,21 @@ public class Outtake implements Subsystem {
         if(clawState!=newState) clawState = newState;
     }
     public void addRotate() {
-
-        rotateIndex++;
-        Utils.minMaxClip(rotateIndex, 0, 4);
-
+        rotateState = rotateState.next();
     }
 
     public void subRotate() {
-        rotateIndex--;
-        Utils.minMaxClip(rotateIndex, 0, 4);
-    }
 
+        rotateState = rotateState.previous();
+    }
+    public void hangMode(){
+        servoArmRight.setPwmDisable();
+        servoArmLeft.setPwmDisable();
+        clawLeft.setPwmDisable();
+        clawRight.setPwmDisable();
+        rotateServo.setPwmDisable();
+        outtakebar.setPwmDisable();
+    }
     boolean releasingTwo = false;
 
     public void releaseOne() {
@@ -246,20 +297,62 @@ public class Outtake implements Subsystem {
             case IDLE:
                 break;
             case OUTTAKE_POSITION:
+                robot.intake.capacPos = Intake.CapacPos.DOWN;
 //                robot.slides.checkForIntake();
+                lastTransferTime = -1;
                 servoArmLeft.setPosition(scoringArmLeft);
                 servoArmRight.setPosition(scoringArmRight);
                 outtakebar.setPosition(scoringOuttakeBarPose);
                 break;
             case TRANSFER_IDLE:
+                robot.intake.capacPos = Intake.CapacPos.DOWN;
+                clawState = ClawState.CLOSE;
 //                robot.slides.checkForIntake();
-                rotateIndex = 2;
+                lastTransferTime = -1;
+                rotateState = ROTATESTATE.DEFAULT;
                 servoArmLeft.setPosition(defaultArmLeft);
                 servoArmRight.setPosition(defaultArmRight);
                 outtakebar.setPosition(defaultOuttakeBarPos);
                 break;
+            case TRANSFER_AUTO:
+                if(capacTransferTimer == -1) {
+                    capacTransferTimer = System.currentTimeMillis();
+                    robot.intake.capacPos = Intake.CapacPos.UP;
+                    clawState = ClawState.CLOSE;
+                }
+                if(System.currentTimeMillis() - capacTransferTimer > 400) {
+                    servoArmLeft.setPosition(intakeArmLeft);
+                    servoArmRight.setPosition(intakeArmRight);
+                    outtakebar.setPosition(intakeTilt);
+                    if(lastintakeAuto == -1) {
+                        lastintakeAuto = System.currentTimeMillis();
+                    }
+                    if(System.currentTimeMillis() - lastintakeAuto > 600) {
+                        clawState = ClawState.OPEN;
+                    }
+                    if(System.currentTimeMillis() - lastintakeAuto > 900) {
+                        lastintakeAuto = -1;
+                        capacTransferTimer = -1;
+                        currentState = FourBarState.INTAKE_OUTTAKE;
+                    }
+                }
+                break;
+            case INTAKE_OUTTAKE:
+                servoArmLeft.setPosition(scoringArmLeft);
+                servoArmRight.setPosition(scoringArmRight);
+                if(lastTransferTime == -1) {
+                    lastTransferTime = System.currentTimeMillis();
+                }
+                if(System.currentTimeMillis() - lastTransferTime > 650) {
+                    outtakebar.setPosition(scoringOuttakeBarPose);
+                }
+                if(System.currentTimeMillis() - lastTransferTime > 800) {
+                    lastTransferTime = -1;
+                    currentState = FourBarState.OUTTAKE_POSITION;
+                }
+                break;
             case INTAKE_POSITION:
-                rotateIndex = 2;
+                rotateState = ROTATESTATE.DEFAULT;
                 outtakebar.setPosition(intakeTilt);
                 servoArmLeft.setPosition(intakeArmLeft);
                 servoArmRight.setPosition(intakeArmRight);
@@ -287,7 +380,24 @@ public class Outtake implements Subsystem {
                 clawRight.setPosition(clawRightOpen);
                 break;
         }
-        rotateServo.setPosition(rotateValues[rotateIndex]);
+        switch (rotateState) {
+            case DEFAULT:
+                rotateServo.setPosition(rotateValues[2]);
+                break;
+            case LEFT45:
+                rotateServo.setPosition(rotateValues[1]);
+                break;
+            case LEFT90:
+                rotateServo.setPosition(rotateValues[0]);
+                break;
+            case RIGHT45:
+                rotateServo.setPosition(rotateValues[3]);
+                break;
+            case RIGHT90:
+                rotateServo.setPosition(rotateValues[4]);
+                break;
+        }
+
     }
     private class ChangeClawState implements Action {
 

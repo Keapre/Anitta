@@ -15,11 +15,15 @@ import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.util.ThreadPool;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drive.MecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystems.Drive.WolfPackDrive;
+import org.firstinspires.ftc.teamcode.subsystems.EndGame.Plane;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Extendo;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
 import org.firstinspires.ftc.teamcode.subsystems.Sensors;
+import org.firstinspires.ftc.teamcode.util.Globals;
+import org.firstinspires.ftc.teamcode.util.Perioada;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +42,12 @@ public class Robot implements OpModeManagerNotifier.Notifications, GlobalWarning
     public Outtake outtake;
     public Extendo extendo;
     public Sensors sensors;
+    public Plane plane;
+    public WolfPackDrive Wdrive;
 
     public Slides slides;
 
+    Pose2d start = new Pose2d(0,0,Math.toRadians(90));
     private LynxModule hub1;
     private LynxModule hub2;
 
@@ -100,13 +107,21 @@ public class Robot implements OpModeManagerNotifier.Notifications, GlobalWarning
         dashboard.setTelemetryTransmissionInterval(25);
 
         hub1 = opMode.hardwareMap.get(LynxModule.class, "Control Hub");
-        hub2 = opMode.hardwareMap.get(LynxModule.class, "Expansion Hub 5");
+        hub2 = opMode.hardwareMap.get(LynxModule.class, "Expansion Hub 10");
 
         hub1.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         hub2.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
 
         //region Initialize subsystems
         subsystems = new ArrayList<>();
+        try {
+            plane = new Plane(opMode.hardwareMap);
+            subsystems.add(plane);
+            Log.w(TAG, "Sensors intialized successfully");
+
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize Plane: " + e.getMessage());
+        }
         try {
             sensors = new Sensors(opMode.hardwareMap);
             subsystems.add(sensors);
@@ -115,10 +130,22 @@ public class Robot implements OpModeManagerNotifier.Notifications, GlobalWarning
             Log.w(TAG, "Failed to initialize Sensors: " + e.getMessage());
         }
         try {
-            drive = new MecanumDrive(opMode.hardwareMap, new Pose2d(0,0,0));
+            if(Globals.RUNMODE == Perioada.AUTO) start = Globals.startPose;
+            else if(Globals.RUNMODE == Perioada.TELEOP && Globals.isRed) drive = new MecanumDrive(opMode.hardwareMap, start);
+            else {
+                start = new Pose2d(0,0,-Math.toRadians(90));
+
+            }
+            drive = new MecanumDrive(opMode.hardwareMap,start);
             subsystems.add(drive);
             Log.w(TAG, "DriveTrain intialized successfully");
         } catch (Exception e) {
+            Log.w(TAG, "Failed to initialize DriveTrain: " + e.getMessage());
+        }
+        try{
+            Wdrive = new WolfPackDrive(drive);
+            subsystems.add(Wdrive);
+        }catch (Exception e) {
             Log.w(TAG, "Failed to initialize DriveTrain: " + e.getMessage());
         }
         try {
