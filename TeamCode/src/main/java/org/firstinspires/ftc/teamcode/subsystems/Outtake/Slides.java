@@ -41,7 +41,7 @@ public class Slides implements Subsystem {
         THIRD_THREESHOLD, //MAX
     }
 
-    public DcMotorEx sMotor1, sMotor2;
+    public CachingDcMotorEx sMotor1, sMotor2;
     Sensors sensors;
 
     double[] manualPowers = new double[]{0.7, -0.7, 0.0};
@@ -64,19 +64,19 @@ public class Slides implements Subsystem {
     public static double targetLength = 0;
     public static double ticksToInches = 0.0; //TUNE
     public static double maxSlidesHeight = 1950; //TUNE
-    final EricPid pid;
     public static double slidePower = 0;
 
     public static double targetPosition = 0;
     public SlidesState slidesState = SlidesState.MANUAL;
 
-    public Slides(HardwareMap hardwareMap, Sensors sensors, Robot robot) {
-        this.sensors = sensors;
-        sMotor1 =  hardwareMap.get(DcMotorEx.class, "outtake1"); //2-are encoder
-        sMotor2 = hardwareMap.get(DcMotorEx.class, "outtake2");
+    public Slides(HardwareMap hardwareMap, Robot robot) {
 
-        resetSlidesEncoder();
-        pid = new EricPid(kP, kI, kD);
+        sMotor1 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake1")); //2-are encoder
+        sMotor2 = new CachingDcMotorEx(hardwareMap.get(DcMotorEx.class, "outtake2"));
+        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        sMotor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        forceShutDown();
         this.robot = robot;
     }
 
@@ -84,34 +84,25 @@ public class Slides implements Subsystem {
         return sMotor1.getCurrentPosition();
     }
     void resetSlidesEncoder() {
-        sMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
-        sMotor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        sMotor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
-    }
-    public void updatePower(double Dpower) {
-        this.power = Dpower;
-//        Log.w("left Trigger",Double.toString(-g2.left_trigger));
-//        Log.w("right Trigger",Double.toString(g2.right_trigger));
 
     }
 
-    public void firstThreeshold() {
-        slidesState = SlidesState.FIRST_THRESHOLD;
-        setTargetLength(distancesThreeshold[0]);
-    }
-
-    public void secondThreeshold() {
-        slidesState = SlidesState.SECOND_THREESHOLD;
-        setTargetLength(distancesThreeshold[1]);
-    }
-
-
-    public void thirdThreeshold() {
-        slidesState = SlidesState.THIRD_THREESHOLD;
-        setTargetLength(distancesThreeshold[2]);
-    }
+//    public void firstThreeshold() {
+//        slidesState = SlidesState.FIRST_THRESHOLD;
+//        setTargetLength(distancesThreeshold[0]);
+//    }
+//
+//    public void secondThreeshold() {
+//        slidesState = SlidesState.SECOND_THREESHOLD;
+//        setTargetLength(distancesThreeshold[1]);
+//    }
+//
+//
+//    public void thirdThreeshold() {
+//        slidesState = SlidesState.THIRD_THREESHOLD;
+//        setTargetLength(distancesThreeshold[2]);
+//    }
 
 
 
@@ -119,6 +110,13 @@ public class Slides implements Subsystem {
         return sensors.getSlidePos() * ticksToInches;
     }
 
+    public void updatePower(double Power) {
+        slidesState = SlidesState.MANUAL;
+        power = Power;
+        if(Power == 0) {
+            slidesState = SlidesState.IDLE;
+        }
+    }
     public double getVelocity() {
         return sensors.getSlideVelocity() * ticksToInches;
     }
@@ -127,42 +125,42 @@ public class Slides implements Subsystem {
 
         slidesState = sldState;
     }
-    public void AutoUpdate() { // no feedforward
-        lenght = getLength();
-        vel = getVelocity();
-        if (abs(lenght - targetLength) < 0.5) {
-            slidesState = SlidesState.IDLE;
-        }
-        power = pid.update(lenght) + kgSlides;
-        sMotor2.setPower(power);
-        sMotor1.setPower(power);
-    }
+//    public void AutoUpdate() { // no feedforward
+//        lenght = getLength();
+//        vel = getVelocity();
+//        if (abs(lenght - targetLength) < 0.5) {
+//            slidesState = SlidesState.IDLE;
+//        }
+//        power = pid.update(lenght) + kgSlides;
+//        sMotor2.setPower(power);
+//        sMotor1.setPower(power);
+//    }
 
-    public void setTargetPosition(double position) {
-        targetPosition = position;
-        this.pid.target = targetPosition;
-    }
+//    public void setTargetPosition(double position) {
+//        targetPosition = position;
+//        this.pid.target = targetPosition;
+//    }
 
-    private class TargetPosition implements Action {
-
-        double position;
-
-        public TargetPosition(double position) {
-            this.position = position;
-        }
-
-        @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            if (getTargetPosition() != position) {
-                setTargetPosition(position);
-            }
-            return false;
-        }
-    }
-
-    public double getTargetPosition() {
-        return targetPosition;
-    }
+//    private class TargetPosition implements Action {
+//
+//        double position;
+//
+//        public TargetPosition(double position) {
+//            this.position = position;
+//        }
+//
+//        @Override
+//        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//            if (getTargetPosition() != position) {
+//                setTargetPosition(position);
+//            }
+//            return false;
+//        }
+//    }
+//
+//    public double getTargetPosition() {
+//        return targetPosition;
+//    }
 /*
     public void feedforward() {
         double error = targetLength - lenght;
@@ -190,27 +188,15 @@ public class Slides implements Subsystem {
                 sMotor1.setPower(idlePower);
 //                Log.w("slides", "nigger");
                 break;
-            case FIRST_THRESHOLD:
-                firstThreeshold();
-                AutoUpdate();
-                break;
-            case SECOND_THREESHOLD:
-                secondThreeshold();
-                AutoUpdate();
-                break;
-            case THIRD_THREESHOLD:
-                thirdThreeshold();
-                AutoUpdate();
-                break;
         }
 //        sMotor1.setPower(1);
 //        sMotor2.setPower(1);
     }
 
-    public void setTargetLength(double targetLength) {
-        targetPosition = Math.max(Math.min(targetLength, maxSlidesHeight), 0);
-        pid.setTarget(targetPosition);
-    }
+//    public void setTargetLength(double targetLength) {
+//        targetPosition = Math.max(Math.min(targetLength, maxSlidesHeight), 0);
+//        pid.setTarget(targetPosition);
+//    }
 
     public void forceShutDown() {
 

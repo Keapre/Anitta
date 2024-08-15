@@ -102,53 +102,53 @@ public class Redplus2 extends LinearOpMode {
 //        }
 
     }
-    int cameraTeamProp() {
-        int readFromCamera = noDetectionFlag;
-
-        teamPropDetectionRed = new TeamPropDetectionRed();
-
-        telemetry.addData("Webcam 1", "Initing");
-        telemetry.update();
-
-        visionPortalTeamProp = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                .setCameraResolution(new Size(1920, 1080))
-                .addProcessor(teamPropDetectionRed)
-                .enableLiveView(true)
-                .build();
-
-        telemetry.setMsTransmissionInterval(50);
-
-        if (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            telemetry.addData("Webcam 1", "Waiting");
-            telemetry.update();
-            while (!isStopRequested() && (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING)) {
-                telemetry.addData("Webcam 1", "Waiting");
-                telemetry.addData("State", visionPortalTeamProp.getCameraState());
-                telemetry.update();
-                sleep(50);
-            }
-            telemetry.addData("Webcam 1", "Ready");
-            telemetry.update();
-        }
-        if (isStopRequested()) {
-            robot.stop();
-            return robotStopFlag;
-        }
-
-        while (!isStarted()) {
-            readFromCamera = teamPropDetectionRed.getTeamProp();
-            telemetry.addData("Case", readFromCamera);
-            telemetry.addData("left", teamPropDetectionRed.leftValue());
-            telemetry.addData("cent", teamPropDetectionRed.centreValue());
-            telemetry.addData("thresh", teamPropDetectionRed.threshold);
-            telemetry.update();
-        }
-
-        visionPortalTeamProp.stopStreaming();
-
-        return readFromCamera;
-    }
+//    int cameraTeamProp() {
+//        int readFromCamera = noDetectionFlag;
+//
+//        teamPropDetectionRed = new TeamPropDetectionRed();
+//
+//        telemetry.addData("Webcam 1", "Initing");
+//        telemetry.update();
+//
+//        visionPortalTeamProp = new VisionPortal.Builder()
+//                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+//                .setCameraResolution(new Size(1920, 1080))
+//                .addProcessor(teamPropDetectionRed)
+//                .enableLiveView(true)
+//                .build();
+//
+//        telemetry.setMsTransmissionInterval(50);
+//
+//        if (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING) {
+//            telemetry.addData("Webcam 1", "Waiting");
+//            telemetry.update();
+//            while (!isStopRequested() && (visionPortalTeamProp.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+//                telemetry.addData("Webcam 1", "Waiting");
+//                telemetry.addData("State", visionPortalTeamProp.getCameraState());
+//                telemetry.update();
+//                sleep(50);
+//            }
+//            telemetry.addData("Webcam 1", "Ready");
+//            telemetry.update();
+//        }
+//        if (isStopRequested()) {
+//            robot.stop();
+//            return robotStopFlag;
+//        }
+//
+//        while (!isStarted()) {
+//            readFromCamera = teamPropDetectionRed.getTeamProp();
+//            telemetry.addData("Case", readFromCamera);
+//            telemetry.addData("left", teamPropDetectionRed.leftValue());
+//            telemetry.addData("cent", teamPropDetectionRed.centreValue());
+//            telemetry.addData("thresh", teamPropDetectionRed.threshold);
+//            telemetry.update();
+//        }
+//
+//        visionPortalTeamProp.stopStreaming();
+//
+//        return readFromCamera;
+//    }
     void intakeOuttakeMovement() {
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
         robot.sleep(0.3);
@@ -177,7 +177,6 @@ public class Redplus2 extends LinearOpMode {
 
         telemetry.addData("is busy",robot.drive.isBusy());
         telemetry.update();
-        Case = cameraTeamProp();
         while (!isStarted()) {
             if (isStopRequested()) {
                 robot.stop();

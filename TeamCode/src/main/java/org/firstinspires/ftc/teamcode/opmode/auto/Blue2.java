@@ -32,7 +32,7 @@ public class Blue2 extends LinearOpMode {
 
     AutoActionScheduler scheduler;
     ElapsedTime trajectoryTimer = null;
-    public static int Case = 2; // 0-left,1-mid,2-right
+    public static int Case = 1; // 0-left,1-mid,2-right
     void solvePurplePixel() {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
@@ -96,8 +96,6 @@ public class Blue2 extends LinearOpMode {
     }
     public void getLocation() {
         Case = robot.sensors.hky.getLocation(false);
-        if(Case == 0) Case = 2;
-        else if(Case == 2) Case = 0;
     }
 
     void intakeOuttakeMovement() {
