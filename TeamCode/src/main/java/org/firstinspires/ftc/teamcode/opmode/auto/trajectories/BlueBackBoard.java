@@ -14,7 +14,7 @@ import java.util.List;
 @Config
 public class BlueBackBoard {
 
-    public  Pose2d start = new Pose2d(15,63,-Math.toRadians(90));
+    public  Pose2d start = new Pose2d(12,63,-Math.toRadians(90));
     public  Pose2d currentPose = new Pose2d(15,-63,Math.toRadians(90));
 
     public static Pose2d START_POSE = new Pose2d(-37, -65, Math.toRadians(270));
@@ -29,7 +29,7 @@ public class BlueBackBoard {
     Trajectory trajectorToYellowPixel;
     Trajectory trajectorToParking;
 
-    public Vector2d parkingPose = new Vector2d(46.5,60);
+    public Vector2d parkingPose = new Vector2d(44.5,60);
     public BlueBackBoard() {
     }
 
@@ -43,7 +43,7 @@ public class BlueBackBoard {
     public Action toBackBoard(MecanumDrive drive,int Case) {
         if(Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(49.8 , 36), -Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(52.7 , 36), -Math.toRadians(180))
                     .build();
         }
         else if(Case == 0) {
@@ -52,7 +52,7 @@ public class BlueBackBoard {
                     .build();
         }
         return  drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(51.3,42.5))
+                .strafeTo(new Vector2d(52.7,42.5))
                 .build();
     }
 
@@ -71,7 +71,7 @@ public class BlueBackBoard {
         }
 
         return   drive.actionBuilder(drive.pose)
-                .strafeToLinearHeading(new Vector2d(34.6, 32),-Math.toRadians(180))
+                .strafeToLinearHeading(new Vector2d(35, 32),-Math.toRadians(180))
                 .build();
     }
     public Action getCycle(MecanumDrive drive) {

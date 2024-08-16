@@ -29,20 +29,6 @@ public class TeleOpBlue extends OpMode {
 //    DcMotorEx sMotor1,sMotor2;
 //
 
-    private void hangUpdate() {
-
-        if(g1.backOnce()) {
-            if(!hang) {
-                hang = true;
-                robot2.drive.hangMode();
-                robot2.outtake.hangMode();
-                robot2.extendo.hangMode();
-                robot2.intake.hangMode();
-                robot2.plane.hangMode();
-            }
-        }
-        telemetry.addData("hang",hang);
-    }
     private void intakeUpdate() {
         robot2.intake.updatePower(g1);
 
@@ -183,7 +169,7 @@ public class TeleOpBlue extends OpMode {
     public void loop() {
         g1.update();
         g2.update();
-        hangUpdate();
+
         intakeUpdate();
         planeUpdate();
         robot2.Wdrive.driveFromController(g1);

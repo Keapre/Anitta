@@ -181,7 +181,7 @@ public class Slides implements Subsystem {
             case MANUAL:
                 sMotor1.setPower(power);
                 sMotor2.setPower(power);
-                Log.w("slides", Double.toString(power));
+                Log.w("debug", Double.toString(power));
                 break;
             case IDLE:
                 sMotor2.setPower(idlePower);

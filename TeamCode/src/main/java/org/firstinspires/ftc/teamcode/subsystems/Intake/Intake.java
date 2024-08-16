@@ -79,7 +79,7 @@ public class Intake implements Subsystem {
     public static int rotateIndex = 2;
     public double currentTilt = 0, lastTilt = 0;
     public static double bestTilt = 0.66;
-    public static double MaxTilt = 0.72;
+    public static double MaxTilt = 0.89;
     public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.66, 0.68, 0.72};
     public static double[] capacPositions = new double[]{1, 0.43}; // 0 - open ,1 - closed
     public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
@@ -102,7 +102,7 @@ public class Intake implements Subsystem {
         //intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         capacPos = CapacPos.DOWN;
-        tiltPos = TiltState.LOW;
+        tiltPos = TiltState.HIGH;
 
         if(Globals.RUNMODE == Perioada.AUTO) {
             capacPos = CapacPos.UP;

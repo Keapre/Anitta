@@ -14,7 +14,7 @@ import java.util.List;
 @Config
 public class Center0Red {
 
-    public  Pose2d start = new Pose2d(15,-63,Math.toRadians(90));
+    public  Pose2d start = new Pose2d(12,-63,Math.toRadians(90));
     public  Pose2d currentPose = new Pose2d(15,-63,Math.toRadians(90));
 
     public static Pose2d START_POSE = new Pose2d(-37, -65, Math.toRadians(270));
@@ -29,13 +29,13 @@ public class Center0Red {
     Trajectory trajectorToYellowPixel;
     Trajectory trajectorToParking;
 
-    public Vector2d parkingPose = new Vector2d(46.5,-60);
+    public Vector2d parkingPose = new Vector2d(46,-60);
     public Center0Red() {
     }
 
     public Action goBackAbit(MecanumDrive drive) {
         return drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(drive.pose.position.x-2.0,drive.pose.position.y))
+                .strafeTo(new Vector2d(drive.pose.position.x-5.5,drive.pose.position.y))
                 .build();
     }
 
@@ -43,16 +43,16 @@ public class Center0Red {
     public Action toBackBoard(MecanumDrive drive,int Case) {
         if(Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(49.8 , -37.5), Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(51, -36), Math.toRadians(180))
                     .build();
         }
         else if(Case == 0) {
             return drive.actionBuilder(drive.pose)
-                    .strafeTo(new Vector2d(52.7, -27.3))
+                    .strafeTo(new Vector2d(50, -26.2))
                     .build();
         }
         return  drive.actionBuilder(drive.pose)
-                 .strafeTo(new Vector2d(51,-42.5))
+                .strafeTo(new Vector2d(49.5,-42.5))
                  .build();
     }
 
@@ -65,13 +65,13 @@ public class Center0Red {
         }
         if(Case == 0) {
             return  drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(11.5, -32),Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(9, -32),Math.toRadians(180))
                     .build();
 
         }
 
         return   drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(32.5, -32),Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(32, -32),Math.toRadians(180))
                     .build();
     }
     public Action getCycle(MecanumDrive drive) {

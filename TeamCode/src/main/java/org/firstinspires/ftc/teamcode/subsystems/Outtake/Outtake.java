@@ -128,10 +128,10 @@ public class Outtake implements Subsystem {
     public static double capacTransferTimer = -1;
     public static double prePreIntakeArmRight = 0.81;
     public static double preIntakeTilt = 0.20;
-    public static double clawLeftClosed = 0;
-    public static double clawRightClosed = 0.1;
-    public static double clawLeftOpen = 0.3;
-    public static double clawRightOpen = 0.35;
+    public static double clawLeftClosed = 0.4;
+    public static double clawRightClosed = 0.15;
+    public static double clawLeftOpen = 0.6;
+    public static double clawRightOpen = 0;
 
 
     public static double scoringOuttakeBarPose = 0.80;

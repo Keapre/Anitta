@@ -75,12 +75,17 @@ public class Blue2 extends LinearOpMode {
         scheduler.run();
         //
         Action fllw2 = traj.getParking(robot.drive);
+        Action back = traj.goBackAbit(robot.drive);
         robot.outtake.clawState = Outtake.ClawState.CLOSE;
         robot.sleep(0.5);
-        scheduler.addAction(new ParallelAction(
-                fllw2,
-                new SleepAction(0.5),
-                robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
+        scheduler.addAction(new SequentialAction(
+                new SleepAction(0.3),
+                back,
+                new ParallelAction(
+                        fllw2,
+                        new SleepAction(0.5),
+                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
+                )
         ));
 
         scheduler.run();

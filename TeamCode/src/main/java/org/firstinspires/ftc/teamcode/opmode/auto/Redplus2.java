@@ -45,18 +45,23 @@ public class Redplus2 extends LinearOpMode {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
 
-        //robot.sleep(0.4);
+        robot.sleep(0.2);
         Action fllw = traj.YellowPixel(robot.drive,Case);
         scheduler.addAction(
                 new SequentialAction(
-                        fllw,
-                        robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW),
-                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
+                        new ParallelAction(
+                                fllw,
+                                new SequentialAction(
+                                        new SleepAction(0.5),
+                                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
+                                )
+                        ),
+                        new SleepAction(0.3),
+                        robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW)
                 )
-
         );
         scheduler.run();
-        robot.sleep(0.5);
+        robot.sleep(0.3);
 //        trajectoryTimer.reset();
 //
 //        while(robot.drive.isBusy() && opModeIsActive() && !isStopRequested()) {
@@ -71,26 +76,31 @@ public class Redplus2 extends LinearOpMode {
 //        trajectoryTimer.reset();
         scheduler.addAction(
                 new SequentialAction(
-                        new SleepAction(0.5),
                         new ParallelAction(
                                 robot.intake.changeintakeState(Intake.IntakeState.IDLE),
                                 fllw1,
-                                new SleepAction(0.3)
+                                new SleepAction(0.2)
                         )
                 )
 
         );
         scheduler.run();
         //
-        Action fllw2 = traj.getParking(robot.drive);
+
+        Action back = traj.goBackAbit(robot.drive);
         robot.outtake.clawState = Outtake.ClawState.CLOSE;
-        robot.sleep(0.5);
-        scheduler.addAction(new ParallelAction(
-                fllw2,
-                new SleepAction(0.5),
-                robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
+        scheduler.addAction(new SequentialAction(
+                new SleepAction(0.3),
+                back
         ));
 
+        scheduler.run();
+        Action fllw2 = traj.getParking(robot.drive);
+        scheduler.addAction(new ParallelAction(
+                fllw2,
+                new SleepAction(0.4),
+                robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
+        ));
         scheduler.run();
 //        boolean done = false;
 //        while(robot.drive.isBusy() && opModeIsActive() && !isStopRequested()) {
