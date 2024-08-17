@@ -22,20 +22,20 @@ public class Center0Red {
 
     public static Vector2d Lane = new Vector2d(23,-60);
     public static Vector2d followLane = new Vector2d(-24,-60);
-    public static Pose2d stackPosition = new Pose2d(-56,-41,Math.toRadians(150));
+    public static Pose2d stackPosition = new Pose2d(-59,-40,Math.toRadians(160));
 
 
     Trajectory trajectorToRedBackBoardPreload;
     Trajectory trajectorToYellowPixel;
     Trajectory trajectorToParking;
 
-    public Vector2d parkingPose = new Vector2d(46,-60);
+    public Pose2d parkingPose = new Pose2d(46,-60,Math.toRadians(180));
     public Center0Red() {
     }
 
     public Action goBackAbit(MecanumDrive drive) {
         return drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(drive.pose.position.x-5.5,drive.pose.position.y))
+                .strafeTo(new Vector2d(drive.pose.position.x-3.7,drive.pose.position.y))
                 .build();
     }
 
@@ -52,7 +52,7 @@ public class Center0Red {
                     .build();
         }
         return  drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(49.5,-42.5))
+                .strafeTo(new Vector2d(49.3 ,-43))
                  .build();
     }
 
@@ -60,7 +60,7 @@ public class Center0Red {
         Action action;
         if (Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeTo(new Vector2d(13, -35))
+                    .strafeTo(new Vector2d(12, -35))
                     .build();
         }
         if(Case == 0) {
@@ -79,7 +79,6 @@ public class Center0Red {
                 .setTangent(Math.toRadians(180))
                 .splineTo(Lane,Math.toRadians(180))
                 .splineToConstantHeading(followLane,Math.toRadians(180))
-                .waitSeconds(0.2)
                 .splineToLinearHeading(stackPosition,Math.toRadians(90))
                 .build();
 
@@ -103,7 +102,7 @@ public class Center0Red {
     }
     public Action getParking(MecanumDrive drive) {
         return drive.actionBuilder(drive.pose)
-                .strafeTo(parkingPose)
+                .strafeToLinearHeading(new Vector2d(parkingPose.position.x,parkingPose.position.y),parkingPose.heading.toDouble())
                 .build();
     }
 }

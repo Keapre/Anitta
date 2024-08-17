@@ -142,12 +142,6 @@ public class Robot implements OpModeManagerNotifier.Notifications, GlobalWarning
         } catch (Exception e) {
             Log.w(TAG, "Failed to initialize DriveTrain: " + e.getMessage());
         }
-        try{
-            Wdrive = new WolfPackDrive(drive);
-            subsystems.add(Wdrive);
-        }catch (Exception e) {
-            Log.w(TAG, "Failed to initialize DriveTrain: " + e.getMessage());
-        }
         try {
             intake = new Intake(opMode.hardwareMap, this);
             subsystems.add(intake);

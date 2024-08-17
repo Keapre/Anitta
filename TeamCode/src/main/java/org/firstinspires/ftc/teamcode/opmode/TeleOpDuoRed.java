@@ -171,7 +171,7 @@ public class TeleOpDuoRed extends OpMode {
         g2.update();
         intakeUpdate();
         planeUpdate();
-        robot2.Wdrive.driveFromController(g1);
+        robot2.drive.driveFromController(g1);
         extendoUpdate();
         slidesUpdate();
         outtakeUpdate();

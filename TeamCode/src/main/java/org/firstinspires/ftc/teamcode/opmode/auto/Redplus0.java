@@ -1,26 +1,18 @@
 package org.firstinspires.ftc.teamcode.opmode.auto;
 
-import android.util.Log;
-import android.util.Size;
-
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
-import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.opmode.auto.trajectories.Center0Red;
 import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Outtake.Outtake;
-import org.firstinspires.ftc.teamcode.subsystems.Outtake.Slides;
-import org.firstinspires.ftc.teamcode.subsystems.Sensors;
 import org.firstinspires.ftc.teamcode.subsystems.Vision.TeamPropDetectionRed;
 import org.firstinspires.ftc.teamcode.util.AutoActionScheduler;
 import org.firstinspires.ftc.teamcode.util.Globals;
@@ -29,7 +21,7 @@ import org.firstinspires.ftc.vision.VisionPortal;
 
 @Config
 @Autonomous(name = "Red 2+0")
-public class Redplus2 extends LinearOpMode {
+public class Redplus0 extends LinearOpMode {
     public Robot robot;
     Center0Red traj;
     private VisionPortal visionPortalTeamProp;
@@ -41,18 +33,32 @@ public class Redplus2 extends LinearOpMode {
     AutoActionScheduler scheduler;
     ElapsedTime trajectoryTimer = null;
     public static int Case = 1; // 0-left,1-mid,2-right
+
     void solvePurplePixel() {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
-
-        robot.sleep(0.2);
-        Action fllw = traj.YellowPixel(robot.drive,Case);
+        //robot.intake.capacPos = Intake.CapacPos.UP; //asta trebuie comentat for before version
+        robot.sleep(0.25);
+        Action fllw = traj.YellowPixel(robot.drive, Case);
+//        scheduler.addAction(
+//                new SequentialAction(
+//                        new ParallelAction(
+//                                fllw,
+//                                new SequentialAction(
+//                                        new SleepAction(0.7),
+//                                        robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW),
+//                                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
+//                                )
+//                        ),
+//                        new SleepAction(0.3)
+//                )
+//        );
         scheduler.addAction(
                 new SequentialAction(
                         new ParallelAction(
                                 fllw,
                                 new SequentialAction(
-                                        new SleepAction(0.5),
+                                        new SleepAction(0.8),
                                         robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
                                 )
                         ),
@@ -72,7 +78,7 @@ public class Redplus2 extends LinearOpMode {
 //            }
 //            robot.sleep(0.01);
 //        }
-        Action fllw1 = traj.toBackBoard(robot.drive,Case);
+        Action fllw1 = traj.toBackBoard(robot.drive, Case);
 //        trajectoryTimer.reset();
         scheduler.addAction(
                 new SequentialAction(
@@ -90,7 +96,7 @@ public class Redplus2 extends LinearOpMode {
         Action back = traj.goBackAbit(robot.drive);
         robot.outtake.clawState = Outtake.ClawState.CLOSE;
         scheduler.addAction(new SequentialAction(
-                new SleepAction(0.3),
+                new SleepAction(0.4),
                 back
         ));
 
@@ -112,7 +118,8 @@ public class Redplus2 extends LinearOpMode {
 //        }
 
     }
-//    int cameraTeamProp() {
+
+    //    int cameraTeamProp() {
 //        int readFromCamera = noDetectionFlag;
 //
 //        teamPropDetectionRed = new TeamPropDetectionRed();
@@ -172,6 +179,7 @@ public class Redplus2 extends LinearOpMode {
     public void getLocation() {
         Case = robot.sensors.hky.getLocation(true);
     }
+
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -179,13 +187,13 @@ public class Redplus2 extends LinearOpMode {
         Globals.RUNMODE = Perioada.AUTO;
         Globals.startPose = traj.start;
         Globals.isRed = true;
-        robot = new Robot(this,true);
-
+        robot = new Robot(this, true);
 
         scheduler = new AutoActionScheduler();
+
         trajectoryTimer = new ElapsedTime();
 
-        telemetry.addData("is busy",robot.drive.isBusy());
+        telemetry.addData("is busy", robot.drive.isBusy());
         telemetry.update();
         while (!isStarted()) {
             if (isStopRequested()) {

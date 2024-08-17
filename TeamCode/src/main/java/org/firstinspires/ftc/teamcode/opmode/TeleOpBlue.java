@@ -58,6 +58,7 @@ public class TeleOpBlue extends OpMode {
     }
     private void outtakeUpdate() {
         robot2.drive.slow_mode = (robot2.outtake.currentState == Outtake.FourBarState.OUTTAKE_POSITION);
+
 //        if(robot2.outtake.currentState == Outtake2.FourBarState.OUTTAKE_POSITION) {
 //            robot2.intake.capacPos = Intake2.CapacPos.DOWN;
 //        }
@@ -172,7 +173,7 @@ public class TeleOpBlue extends OpMode {
 
         intakeUpdate();
         planeUpdate();
-        robot2.Wdrive.driveFromController(g1);
+        robot2.drive.driveFromController(g1);
         extendoUpdate();
         slidesUpdate();
         outtakeUpdate();

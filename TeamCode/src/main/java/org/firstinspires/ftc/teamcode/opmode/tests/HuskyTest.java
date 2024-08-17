@@ -14,7 +14,7 @@ public class HuskyTest extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            int location = husky.getLocation(false);
+            int location = husky.getLocation(true);
             telemetry.addData("location",location);
             telemetry.update();
         }

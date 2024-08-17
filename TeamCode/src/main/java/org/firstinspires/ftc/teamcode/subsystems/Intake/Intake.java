@@ -80,7 +80,7 @@ public class Intake implements Subsystem {
     public double currentTilt = 0, lastTilt = 0;
     public static double bestTilt = 0.66;
     public static double MaxTilt = 0.89;
-    public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.66, 0.68, 0.72};
+    public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.69, 0.71, 0.72};
     public static double[] capacPositions = new double[]{1, 0.43}; // 0 - open ,1 - closed
     public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
 
@@ -102,7 +102,7 @@ public class Intake implements Subsystem {
         //intakeMotor.motor[0].setDirection(DcMotorSimple.Direction.REVERSE);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         capacPos = CapacPos.DOWN;
-        tiltPos = TiltState.HIGH;
+        tiltPos = TiltState.LOW;
 
         if(Globals.RUNMODE == Perioada.AUTO) {
             capacPos = CapacPos.UP;
@@ -131,6 +131,15 @@ public class Intake implements Subsystem {
             case HIGH:
                 tilt.setPosition(MaxTilt);
                 break;
+            case STACK5:
+                tilt.setPosition(tiltPositions[5]);
+                break;
+            case STACK4:
+                tilt.setPosition(tiltPositions[4]);
+                break;
+            default:
+                break;
+
         }
         switch (capacPos) {
             case UP:
@@ -148,10 +157,16 @@ public class Intake implements Subsystem {
                 intakeMotor.setPower(intakeSpeed);
                 break;
             case INTAKE_AUTO:
-                if(Globals.NUM_PIXELS!=2) intakeMotor.setPower(1);
+                if(Globals.NUM_PIXELS!=2) {
+                    intakeMotor.setPower(1);
+                    if(Globals.NUM_PIXELS == 1) {
+                        tiltPos = TiltState.STACK4;
+                    }
+                }
                 else {
                     intakeState = IntakeState.REVERSE_FOR_TIME;
                 }
+                break;
             case REVERSE_FOR_TIME:
                 long elapsed = System.currentTimeMillis() - reverseTimeStart;
                 if (System.currentTimeMillis() < reverseTimeStart + timeReverse) {

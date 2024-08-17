@@ -29,13 +29,13 @@ public class BlueBackBoard {
     Trajectory trajectorToYellowPixel;
     Trajectory trajectorToParking;
 
-    public Vector2d parkingPose = new Vector2d(44.5,60);
+    public Vector2d parkingPose = new Vector2d(46,60);
     public BlueBackBoard() {
     }
 
     public Action goBackAbit(MecanumDrive drive) {
         return drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(drive.pose.position.x-2.0,drive.pose.position.y))
+                .strafeTo(new Vector2d(drive.pose.position.x-3.7,drive.pose.position.y))
                 .build();
     }
 
@@ -43,12 +43,12 @@ public class BlueBackBoard {
     public Action toBackBoard(MecanumDrive drive,int Case) {
         if(Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(52.7 , 36), -Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(52.7 , 37), -Math.toRadians(180))
                     .build();
         }
         else if(Case == 0) {
             return drive.actionBuilder(drive.pose)
-                    .strafeTo(new Vector2d(52.7, 26))
+                    .strafeTo(new Vector2d(52.7, 30.5))
                     .build();
         }
         return  drive.actionBuilder(drive.pose)
@@ -65,13 +65,13 @@ public class BlueBackBoard {
         }
         if(Case == 0) {
             return  drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(11.5, 32),-Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(9.0, 30.6),-Math.toRadians(180))
                     .build();
 
         }
 
         return   drive.actionBuilder(drive.pose)
-                .strafeToLinearHeading(new Vector2d(35, 32),-Math.toRadians(180))
+                .strafeToLinearHeading(new Vector2d(32, 29),-Math.toRadians(180))
                 .build();
     }
     public Action getCycle(MecanumDrive drive) {

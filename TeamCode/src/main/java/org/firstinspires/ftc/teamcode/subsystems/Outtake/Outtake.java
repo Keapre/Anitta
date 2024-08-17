@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake.Intake;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServo;
 import org.firstinspires.ftc.teamcode.util.Caching.CachingServoImplEx;
 import org.firstinspires.ftc.teamcode.util.Globals;
+import org.firstinspires.ftc.teamcode.util.Perioada;
 import org.firstinspires.ftc.teamcode.util.Utils;
 
 
@@ -128,10 +129,10 @@ public class Outtake implements Subsystem {
     public static double capacTransferTimer = -1;
     public static double prePreIntakeArmRight = 0.81;
     public static double preIntakeTilt = 0.20;
-    public static double clawLeftClosed = 0.4;
-    public static double clawRightClosed = 0.15;
-    public static double clawLeftOpen = 0.6;
-    public static double clawRightOpen = 0;
+    public static double clawLeftClosed = 0.45;
+    public static double clawRightClosed = 0.4;
+    public static double clawLeftOpen = 0.65;
+    public static double clawRightOpen = 0.6;
 
 
     public static double scoringOuttakeBarPose = 0.80;
@@ -305,7 +306,7 @@ public class Outtake implements Subsystem {
                 outtakebar.setPosition(scoringOuttakeBarPose);
                 break;
             case TRANSFER_IDLE:
-                robot.intake.capacPos = Intake.CapacPos.DOWN;
+                if(Globals.RUNMODE != Perioada.AUTO) robot.intake.capacPos = Intake.CapacPos.DOWN;
                 clawState = ClawState.CLOSE;
 //                robot.slides.checkForIntake();
                 lastTransferTime = -1;
@@ -315,6 +316,28 @@ public class Outtake implements Subsystem {
                 outtakebar.setPosition(defaultOuttakeBarPos);
                 break;
             case TRANSFER_AUTO:
+//                if(capacTransferTimer == -1) {
+//                    capacTransferTimer = System.currentTimeMillis();
+//                    robot.intake.capacPos = Intake.CapacPos.UP;
+//                    clawState = ClawState.CLOSE;
+//                }
+//                if((System.currentTimeMillis() - capacTransferTimer > 400 && Globals.RUNMODE != Perioada.AUTO)
+//                    || (System.currentTimeMillis() - capacTransferTimer > 50 && Globals.RUNMODE == Perioada.AUTO)) {
+//                    servoArmLeft.setPosition(intakeArmLeft);
+//                    servoArmRight.setPosition(intakeArmRight);
+//                    outtakebar.setPosition(intakeTilt);
+//                    if(lastintakeAuto == -1) {
+//                        lastintakeAuto = System.currentTimeMillis();
+//                    }
+//                    if((System.currentTimeMillis() - lastintakeAuto > 600 && Globals.RUNMODE != Perioada.AUTO) || (System.currentTimeMillis() - lastintakeAuto > 200 && Globals.RUNMODE == Perioada.AUTO)) {
+//                        clawState = ClawState.OPEN;
+//                    }
+//                    if((System.currentTimeMillis() - lastintakeAuto > 900 && Globals.RUNMODE != Perioada.AUTO) || (System.currentTimeMillis() - lastintakeAuto > 450 && Globals.RUNMODE == Perioada.AUTO)) {
+//                        lastintakeAuto = -1;
+//                        capacTransferTimer = -1;
+//                        currentState = FourBarState.INTAKE_OUTTAKE;
+//                    }
+//                }
                 if(capacTransferTimer == -1) {
                     capacTransferTimer = System.currentTimeMillis();
                     robot.intake.capacPos = Intake.CapacPos.UP;
@@ -343,13 +366,25 @@ public class Outtake implements Subsystem {
                 if(lastTransferTime == -1) {
                     lastTransferTime = System.currentTimeMillis();
                 }
-                if(System.currentTimeMillis() - lastTransferTime > 650) {
+                if(System.currentTimeMillis() - lastTransferTime > 450) {
                     outtakebar.setPosition(scoringOuttakeBarPose);
                 }
-                if(System.currentTimeMillis() - lastTransferTime > 800) {
+                if(System.currentTimeMillis() - lastTransferTime > 650) {
                     lastTransferTime = -1;
                     currentState = FourBarState.OUTTAKE_POSITION;
                 }
+//                servoArmLeft.setPosition(scoringArmLeft);
+//                servoArmRight.setPosition(scoringArmRight);
+//                if(lastTransferTime == -1) {
+//                    lastTransferTime = System.currentTimeMillis();
+//                }
+//                if(System.currentTimeMillis() - lastTransferTime > 650) {
+//                    outtakebar.setPosition(scoringOuttakeBarPose);
+//                }
+//                if(System.currentTimeMillis() - lastTransferTime > 800) {
+//                    lastTransferTime = -1;
+//                    currentState = FourBarState.OUTTAKE_POSITION;
+//                }
                 break;
             case INTAKE_POSITION:
                 rotateState = ROTATESTATE.DEFAULT;

@@ -32,20 +32,24 @@ public class Blue2 extends LinearOpMode {
 
     AutoActionScheduler scheduler;
     ElapsedTime trajectoryTimer = null;
-    public static int Case = 1; // 0-left,1-mid,2-right
+    public static int Case = 0; // 0-left,1-mid,2-right
     void solvePurplePixel() {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
 
-        //robot.sleep(0.4);
+        robot.sleep(0.2);
         Action fllw = traj.YellowPixel(robot.drive,Case);
         scheduler.addAction(
                 new SequentialAction(
-                        fllw,
-                        robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW),
-                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
+                        new ParallelAction(
+                                fllw,
+                                new SequentialAction(
+                                        new SleepAction(0.8),
+                                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
+                                )
+                        ),
+                        robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW)
                 )
-
         );
         scheduler.run();
         robot.sleep(0.5);
@@ -139,7 +143,8 @@ public class Blue2 extends LinearOpMode {
         if (isStopRequested()) {
             robot.stop();
         }
-        getLocation();
+        //
+        // getLocation();
         solvePurplePixel();
     }
 }

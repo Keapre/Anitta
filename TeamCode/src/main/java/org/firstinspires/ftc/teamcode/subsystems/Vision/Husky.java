@@ -16,8 +16,8 @@ public class Husky{
 
     private final int READ_PERIOD = 1;
     private final int FRAME_WIDTH = 320;
-    private int LEFT_THRESHOLD = FRAME_WIDTH / 3;
-    private int RIGHT_THRESHOLD = 2 * (FRAME_WIDTH / 3) - 20;
+    private int LEFT_THRESHOLDBLUE = FRAME_WIDTH / 3 - 60;
+    private int RIGHT_THRESHOLDBLUE = 2 * (FRAME_WIDTH / 3) - 60;
 
     public static int yThreshold = 70;
 
@@ -58,12 +58,24 @@ public class Husky{
         for(HuskyLens.Block blk : blocks) {
 //               Log.w("y",Double.toString(blk.y));
 //               Log.w("id",Double.toString(blk.id));
-                if((blk.id == 1 && red) || (blk.id == 2 && !red) ) {
+                if(blk.id == 2 && !red) {
                     int x = blk.x;
                     int y = blk.y;
-                    if(x<=LEFT_THRESHOLD) {
+                    if(x<=LEFT_THRESHOLDBLUE  && blk.id == 2) {
                         location = 0;
-                    }else if(x <= RIGHT_THRESHOLD) {
+                    }else if(x <= RIGHT_THRESHOLDBLUE && blk.id == 2) {
+                        location = 1;
+                    }else {
+                        location = 2;
+                    }
+                    break;
+                }
+                if(blk.id == 1 && red) {
+                    int x = blk.x;
+                    int y = blk.y;
+                    if(x<=LEFT_THRESHOLDBLUE) {
+                        location = 0;
+                    }else if(x <= RIGHT_THRESHOLDBLUE) {
                         location = 1;
                     }else {
                         location = 2;
