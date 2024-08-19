@@ -61,9 +61,9 @@ public class Husky{
                 if(blk.id == 2 && !red) {
                     int x = blk.x;
                     int y = blk.y;
-                    if(x<=LEFT_THRESHOLDBLUE  && blk.id == 2) {
+                    if(x<=LEFT_THRESHOLDBLUE) {
                         location = 0;
-                    }else if(x <= RIGHT_THRESHOLDBLUE && blk.id == 2) {
+                    }else if(x <= RIGHT_THRESHOLDBLUE) {
                         location = 1;
                     }else {
                         location = 2;

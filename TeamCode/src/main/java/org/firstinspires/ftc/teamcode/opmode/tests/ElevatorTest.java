@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmode.tests;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -25,7 +27,7 @@ public class ElevatorTest extends LinearOpMode {
     GamePadController g1;
     ElevatorState elevatorState = ElevatorState.IDLE;
 
-    public static double idlePower = 0.07;
+    public static double idlePower = 0;
     public static double elevatorPower = 1;
 
     public static double retractPower = -1;
@@ -90,6 +92,7 @@ public class ElevatorTest extends LinearOpMode {
                 elevatorMotor2.setPower(-1);
                 break;
             case IDLE:
+                Log.w("debug", "setting idle");
                 elevatorMotor1.setPower(idlePower);
                 elevatorMotor2.setPower(idlePower);
                 break;

@@ -65,13 +65,13 @@ public class Center0Red {
         }
         if(Case == 0) {
             return  drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(9, -32),Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(8, -32),Math.toRadians(180))
                     .build();
 
         }
 
         return   drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(32, -32),Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(33.5, -32),Math.toRadians(180))
                     .build();
     }
     public Action getCycle(MecanumDrive drive) {

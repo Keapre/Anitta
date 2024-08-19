@@ -32,7 +32,7 @@ public class Redplus0 extends LinearOpMode {
 
     AutoActionScheduler scheduler;
     ElapsedTime trajectoryTimer = null;
-    public static int Case = 1; // 0-left,1-mid,2-right
+    public static int Case = 0; // 0-left,1-mid,2-right
 
     void solvePurplePixel() {
         robot.intake.tiltPos = Intake.TiltState.HIGH;
@@ -194,6 +194,7 @@ public class Redplus0 extends LinearOpMode {
         trajectoryTimer = new ElapsedTime();
 
         telemetry.addData("is busy", robot.drive.isBusy());
+        telemetry.addData("Case",Case);
         telemetry.update();
         while (!isStarted()) {
             if (isStopRequested()) {

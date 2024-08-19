@@ -82,7 +82,7 @@ public class Intake implements Subsystem {
     public static double MaxTilt = 0.89;
     public static double[] tiltPositions = new double[]{0.6, 0.62, 0.64, 0.69, 0.71, 0.72};
     public static double[] capacPositions = new double[]{1, 0.43}; // 0 - open ,1 - closed
-    public static double[] motorSpeed = new double[]{1, -1, -0.3, 0.0};
+    public static double[] motorSpeed = new double[]{1, -0.3, -0.3, 0.0};
 
     final CachingServoImplEx capac;
     public boolean started = false;
@@ -135,7 +135,7 @@ public class Intake implements Subsystem {
                 tilt.setPosition(tiltPositions[5]);
                 break;
             case STACK4:
-                tilt.setPosition(tiltPositions[4]);
+                tilt.setPosition(tiltPositions[3]);
                 break;
             default:
                 break;

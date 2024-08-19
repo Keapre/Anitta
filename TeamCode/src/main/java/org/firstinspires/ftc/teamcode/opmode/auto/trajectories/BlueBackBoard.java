@@ -43,16 +43,16 @@ public class BlueBackBoard {
     public Action toBackBoard(MecanumDrive drive,int Case) {
         if(Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(52.7 , 37), -Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(50 , 36), -Math.toRadians(180))
                     .build();
         }
         else if(Case == 0) {
             return drive.actionBuilder(drive.pose)
-                    .strafeTo(new Vector2d(52.7, 30.5))
+                    .strafeTo(new Vector2d(50, 27))
                     .build();
         }
         return  drive.actionBuilder(drive.pose)
-                .strafeTo(new Vector2d(52.7,42.5))
+                .strafeTo(new Vector2d(50,44.8))
                 .build();
     }
 
@@ -60,18 +60,19 @@ public class BlueBackBoard {
         Action action;
         if (Case == 1) {
             return drive.actionBuilder(drive.pose)
-                    .strafeTo(new Vector2d(13, 35))
+                    .strafeTo(new Vector2d(11.8, 33.8))
                     .build();
         }
         if(Case == 0) {
             return  drive.actionBuilder(drive.pose)
-                    .strafeToLinearHeading(new Vector2d(9.0, 30.6),-Math.toRadians(180))
+                    .strafeToLinearHeading(new Vector2d(6.5, 32),-Math.toRadians(180))
                     .build();
 
         }
 
         return   drive.actionBuilder(drive.pose)
-                .strafeToLinearHeading(new Vector2d(32, 29),-Math.toRadians(180))
+                //.strafeTo(new Vector2d(14,45))
+                .strafeToLinearHeading(new Vector2d(31.4, 32),-Math.toRadians(180))
                 .build();
     }
     public Action getCycle(MecanumDrive drive) {

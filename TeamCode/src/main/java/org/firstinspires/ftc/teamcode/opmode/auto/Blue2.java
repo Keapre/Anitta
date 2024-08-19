@@ -34,7 +34,7 @@ public class Blue2 extends LinearOpMode {
     ElapsedTime trajectoryTimer = null;
     public static int Case = 0; // 0-left,1-mid,2-right
     void solvePurplePixel() {
-        robot.intake.tiltPos = Intake.TiltState.HIGH;
+        robot.intake.tiltPos = Intake.TiltState.LOW;
         robot.outtake.currentState = Outtake.FourBarState.TRANSFER_IDLE;
 
         robot.sleep(0.2);
@@ -44,15 +44,15 @@ public class Blue2 extends LinearOpMode {
                         new ParallelAction(
                                 fllw,
                                 new SequentialAction(
-                                        new SleepAction(0.8),
+                                        new SleepAction(0.9),
                                         robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_AUTO)
                                 )
                         ),
+                        robot.intake.changeState(Intake.TiltState.HIGH),
                         robot.intake.changeintakeState(Intake.IntakeState.REVERSE_SLOW)
                 )
         );
         scheduler.run();
-        robot.sleep(0.5);
 //        trajectoryTimer.reset();
 //
 //        while(robot.drive.isBusy() && opModeIsActive() && !isStopRequested()) {
@@ -70,28 +70,27 @@ public class Blue2 extends LinearOpMode {
                         new SleepAction(0.5),
                         new ParallelAction(
                                 robot.intake.changeintakeState(Intake.IntakeState.IDLE),
-                                fllw1,
-                                new SleepAction(0.3)
+                                fllw1
                         )
                 )
 
         );
         scheduler.run();
-        //
-        Action fllw2 = traj.getParking(robot.drive);
+
         Action back = traj.goBackAbit(robot.drive);
         robot.outtake.clawState = Outtake.ClawState.CLOSE;
-        robot.sleep(0.5);
         scheduler.addAction(new SequentialAction(
-                new SleepAction(0.3),
-                back,
-                new ParallelAction(
-                        fllw2,
-                        new SleepAction(0.5),
-                        robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
-                )
+                new SleepAction(0.4),
+                back
         ));
 
+        scheduler.run();
+        Action fllw2 = traj.getParking(robot.drive);
+        scheduler.addAction(new ParallelAction(
+                fllw2,
+                //new SleepAction(0.4),
+                robot.outtake.changeArmState(Outtake.FourBarState.TRANSFER_IDLE)
+        ));
         scheduler.run();
 //        boolean done = false;
 //        while(robot.drive.isBusy() && opModeIsActive() && !isStopRequested()) {
@@ -144,7 +143,7 @@ public class Blue2 extends LinearOpMode {
             robot.stop();
         }
         //
-        // getLocation();
+        getLocation();
         solvePurplePixel();
     }
 }

@@ -36,6 +36,9 @@ public class TeleOpDuoRed extends OpMode {
         if(robot2.intake.intakeSpeed == 1) {
             robot2.intake.capacPos = Intake.CapacPos.DOWN;
         }
+        if(g1.xOnce()) {
+            robot2.intake.tiltPos = Intake.TiltState.STACK4;
+        }
         if (g1.aOnce()) {
             if (robot2.intake.tiltPos == Intake.TiltState.LOW) {
                 robot2.intake.tiltPos = Intake.TiltState.HIGH;
